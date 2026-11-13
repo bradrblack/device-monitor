@@ -8,10 +8,10 @@
       "pluginName": "InfluxDB"
     }
   ],
-  "title": "Appliance Monitor",
+  "title": "Device Monitor",
   "uid": "appliance-monitor",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "tags": [
     "appliances"
   ],
@@ -319,6 +319,293 @@
       "options": {
         "showHeader": true
       }
+    },
+    {
+      "id": 5,
+      "type": "barchart",
+      "title": "Runs per day",
+      "gridPos": {
+        "x": 0,
+        "y": 22,
+        "w": 12,
+        "h": 9
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_INFLUX}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_INFLUX}"
+          },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"appliance_state\" and r._field == \"seconds\" and contains(value: r.device, set: ${device:json}))\n  |> aggregateWindow(every: 1d, fn: count, createEmpty: true, timeSrc: \"_start\")\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"device\"], valueColumn: \"_value\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "xTickLabelRotation": 0,
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Time since last data",
+      "description": "From the 10-minute readings. Over 30 minutes means the board is offline (power, Wi-Fi) or InfluxDB isn't receiving.",
+      "gridPos": {
+        "x": 12,
+        "y": 22,
+        "w": 12,
+        "h": 9
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_INFLUX}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_INFLUX}"
+          },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: -30d)\n  |> filter(fn: (r) => r._measurement =~ /^appliance_/ and contains(value: r.device, set: ${device:json}))\n  |> group(columns: [\"device\"])\n  |> last()\n  |> map(fn: (r) => ({device: r.device, _time: r._time, _value: float(v: uint(v: now()) - uint(v: r._time)) / 1000000000.0}))\n  |> group()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"device\"], valueColumn: \"_value\")\n  |> drop(columns: [\"_time\"])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1200
+              },
+              {
+                "color": "red",
+                "value": 1800
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value_and_name"
+      }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Vibration: idle and running, against the thresholds",
+      "description": "Every 10 minutes: the loudest idle window and the quietest running window, with the thresholds in force. Both thresholds should sit above 'idle peak' and below 'running lowest'.",
+      "gridPos": {
+        "x": 0,
+        "y": 31,
+        "w": 24,
+        "h": 10
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_INFLUX}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_INFLUX}"
+          },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"appliance_reading\" and (r._field == \"rms_idle_max\" or r._field == \"rms_run_min\" or r._field == \"rms_on\" or r._field == \"rms_off\") and contains(value: r.device, set: ${device:json}))\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, series: r.device + \" \" + (if r._field == \"rms_idle_max\" then \"idle peak\" else if r._field == \"rms_run_min\" then \"running lowest\" else if r._field == \"rms_on\" then \"start threshold\" else \"stop threshold\")}))\n  |> group(columns: [\"series\"])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "m/s²",
+          "decimals": 3,
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "showPoints": "always",
+            "spanNulls": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*threshold.*"
+            },
+            "properties": [
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    6,
+                    4
+                  ]
+                }
+              },
+              {
+                "id": "custom.showPoints",
+                "value": "never"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Board health: Wi-Fi signal",
+      "gridPos": {
+        "x": 0,
+        "y": 41,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_INFLUX}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_INFLUX}"
+          },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"appliance_reading\" and r._field == \"rssi\" and contains(value: r.device, set: ${device:json}))\n  |> keep(columns: [\"_time\", \"_value\", \"device\"])\n  |> group(columns: [\"device\"])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dBm",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 9,
+      "type": "table",
+      "title": "Reboots",
+      "gridPos": {
+        "x": 12,
+        "y": 41,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DS_INFLUX}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DS_INFLUX}"
+          },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"appliance_boot\" and contains(value: r.device, set: ${device:json}))\n  |> pivot(rowKey: [\"_time\", \"device\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> keep(columns: [\"_time\", \"device\", \"reason\", \"version\", \"sensor\"])\n  |> group()\n  |> sort(columns: [\"_time\"], desc: true)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
     }
-  ]
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "${DS_INFLUX}"
+        },
+        "enable": true,
+        "iconColor": "orange",
+        "name": "Reboots",
+        "target": {
+          "refId": "Anno",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"appliance_boot\" and r._field == \"reason\" and contains(value: r.device, set: ${device:json}))\n  |> group()\n  |> map(fn: (r) => ({_time: r._time, text: r.device + \" rebooted: \" + r._value}))"
+        }
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "${DS_INFLUX}"
+        },
+        "enable": true,
+        "iconColor": "purple",
+        "name": "Threshold changes",
+        "target": {
+          "refId": "Anno",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"appliance_config\" and r._field == \"rms_on\" and contains(value: r.device, set: ${device:json}))\n  |> group()\n  |> map(fn: (r) => ({_time: r._time, text: r.device + \" thresholds changed (start \" + string(v: r._value) + \")\"}))"
+        }
+      }
+    ]
+  }
 }

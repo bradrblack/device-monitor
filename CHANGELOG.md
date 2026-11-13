@@ -1,7 +1,34 @@
 # Changelog
 
-Notable changes to the vibration monitor firmware, newest first. Versions refer
-to `FIRMWARE_VERSION` in `src/vibration-monitor.ino`.
+Notable changes to the firmware, newest first. Versions refer to
+`FIRMWARE_VERSION` in `src/device-monitor.ino` (`src/vibration-monitor.ino`
+before 2026-11-13r1).
+
+## 2026-11-13r1
+
+Rebuilt on the Sump Master 2000 firmware, cut down to on/off detection.
+
+- **One image for every unit.** Device name, Wi-Fi, time zone, thresholds and
+  connections are set at run time and kept on the board; the per-device
+  PlatformIO environments (`pump`, `dryer`) are gone.
+- **Wi-Fi setup portal** (WiFiManager, from the fan remote): opens on first boot,
+  when the saved network can't be joined, on a double press of RESET, or from the
+  web page. Sets the network, the device name and the admin password.
+- **Web page** at `http://<name>.local/`: live state and vibration chart, guided
+  calibration (measure idle, measure running, suggested thresholds), detection
+  settings, device name and time zone, connections, firmware upload, log.
+- **mDNS and OTA**: ArduinoOTA from PlatformIO and firmware upload from the web
+  page, both with trial-and-rollback.
+- **ADXL345 and ADXL346**, identified by device ID at boot, at address 0x53 or 0x1D.
+- **Outputs**, each optional: InfluxDB (direct with a token, or via Telegraf),
+  ntfy (any server; start/stop and daily report switchable), MQTT with Home
+  Assistant discovery. **Adafruit IO is removed.**
+- The accelerometer missing no longer reboots the board: detection pauses, it's
+  retried every 30 s, and the web page and OTA keep working.
+- New Telegraf listener config (`telegraf/devmon.conf`), extended Grafana
+  dashboard and a "Device monitor silent" alert.
+- Toolchain as Sump Master 2000: pioarduino 55.03.37, `min_spiffs` partitions
+  (two 1.9 MB OTA slots; first flash after upgrading must be over USB).
 
 ## 2026-09-22r1
 
