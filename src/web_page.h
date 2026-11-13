@@ -34,6 +34,7 @@ ol{margin:0;padding-left:20px}ol li{margin-bottom:10px}.row{display:flex;gap:8px
 </style></head><body><main>
 <div class="top"><div><h1 id="title">Device Monitor</h1><div class="sub" id="sub">connecting&hellip;</div></div><div><span class="badge" id="state">&hellip;</span></div></div>
 <div id="flash"></div>
+<p class="note" id="loginbar">Changing settings needs the admin password. <a href="/login">Log in</a> (user <b>admin</b>).</p>
 <div class="tiles">
 <div class="card"><h2>Vibration</h2><div class="big" id="rms">&ndash;</div><div class="sub">m/s&sup2; RMS, loudest in the last second</div></div>
 <div class="card"><h2>This run</h2><div class="big" id="runfor">&ndash;</div><div class="sub" id="lastrunt">&nbsp;</div></div>
@@ -115,8 +116,12 @@ ol{margin:0;padding-left:20px}ol li{margin-bottom:10px}.row{display:flex;gap:8px
 </main><script>
 const $=id=>document.getElementById(id),f=(v,d)=>v==null?'–':(+v).toFixed(d);
 let hist=[],cfg=null,seq=0,filled=false,sug=null;
-const q=new URLSearchParams(location.search),msgs={saved:'Detection settings saved.',reset:'Detection settings reset to the firmware defaults.',conn:'Connections saved.',dev:'Device saved.',test:'Test sent; check ntfy, InfluxDB and Home Assistant.'};
+const q=new URLSearchParams(location.search),msgs={saved:'Detection settings saved.',reset:'Detection settings reset to the firmware defaults.',conn:'Connections saved.',dev:'Device saved.',login:'Logged in.',test:'Test sent; check ntfy, InfluxDB and Home Assistant.'};
 for(const k in msgs)if(q.has(k))$('flash').innerHTML='<p class="msg">'+msgs[k]+'</p>';
+// Log in (GET /login) before any save: Safari hangs on a password challenge to a form POST.
+const loggedIn=document.cookie.split('; ').includes('dm_login=1');
+if(loggedIn)$('loginbar').style.display='none';
+else document.querySelectorAll('form[method=post]').forEach(F=>F.addEventListener('submit',e=>{e.preventDefault();location.href='/login';}));
 function dur(s){s=Math.round(s);return s>=3600?Math.floor(s/3600)+' h '+Math.floor(s%3600/60)+' min':s>=60?Math.floor(s/60)+' min '+s%60+' s':s+' s';}
 function draw(){const c=$('chart'),r=devicePixelRatio||1,w=c.clientWidth,h=c.clientHeight;c.width=w*r;c.height=h*r;
 const g=c.getContext('2d');g.scale(r,r);const cs=getComputedStyle(document.documentElement),col=n=>cs.getPropertyValue(n);

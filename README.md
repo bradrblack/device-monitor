@@ -387,8 +387,13 @@ history recorded through the old Telegraf bridge stays on the same dashboard.
 - **Log**: the last 120 log lines.
 
 Viewing needs no password; anyone on your network can see the state and the log.
-Saving anything asks for user `admin` and the admin password, using HTTP digest
-authentication so the password itself isn't sent. What you type into a form (an
+To change anything, first press **Log in** at the top of the page: the browser asks
+for user `admin` and the admin password (HTTP digest authentication, so the password
+itself isn't sent) and the board gives it a session cookie for the saves that
+follow. A restart, or a new admin password, logs everyone out. From a script, send
+the digest login with each request instead, e.g.
+`curl --digest -u admin:<password> -d "mqtt_host=..." http://<name>.local/connections`.
+What you type into a form (an
 MQTT password, a token) does cross your network unencrypted, since the page is
 plain HTTP. Saved secrets are never shown back. The page isn't reachable from the
 internet unless you set that up yourself.
