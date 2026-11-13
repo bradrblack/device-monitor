@@ -132,11 +132,17 @@ g.setLineDash([5,4]);g.beginPath();g.moveTo(0,y(cfg.off));g.lineTo(w,y(cfg.off))
 g.strokeStyle=col('--run');g.lineWidth=1.5;g.beginPath();const n=150;
 hist.forEach((v,i)=>{const x=(i+n-hist.length)/(n-1)*w;i?g.lineTo(x,y(v)):g.moveTo(x,y(v));});g.stroke();
 g.fillStyle=col('--dim');g.font='11px system-ui';g.fillText(top.toFixed(2),4,13);}
+// Thresholds from the two 30 s measurements. Best case: every running reading is
+// above every idle one (lowest running vs loudest idle). Motors that dip while
+// running (a microwave turntable, a washer pausing) fall back to the running
+// average, and loud idle bumps fall back to the idle average; the start and stop
+// delays ride out the short overlaps.
 function suggest(ci,cr){if(!ci.n||!cr.n)return[null,'needs both measurements'];
-let lo=ci.max,hi=cr.min,note='';
-if(hi<=lo*1.25){lo=ci.avg;note=' (idle peaks overlap the running level; the start delay filters short bumps)';}
+let lo=ci.max,hi=cr.min,f=[.6,.3],note='';
+if(hi<=lo*1.25){hi=cr.avg;f=[.5,.25];note=' (running dips close to idle; the stop delay rides them out)';
+if(hi<=lo*1.5){lo=ci.avg;note=' (idle bumps reach the running level; the start and stop delays filter them)';}}
 if(hi<=lo*1.5||hi-lo<0.03)return[null,'running is too close to idle: mount the sensor closer to the motor, or firmer'];
-const on=lo+.6*(hi-lo),off=lo+.3*(hi-lo);return[{on:+on.toFixed(3),off:+off.toFixed(3)},'start '+on.toFixed(3)+' · stop '+off.toFixed(3)+note];}
+const on=lo+f[0]*(hi-lo),off=lo+f[1]*(hi-lo);return[{on:+on.toFixed(3),off:+off.toFixed(3)},'start '+on.toFixed(3)+' · stop '+off.toFixed(3)+note];}
 async function status(){try{const s=await(await fetch('/api/status')).json();cfg=s.cfg;
 document.title=s.device+' · Device Monitor';$('title').textContent=s.device;
 $('sub').textContent=s.sensor+' · firmware '+s.version+' · '+s.time+' · up '+(s.uptime_s/3600).toFixed(1)+' h';

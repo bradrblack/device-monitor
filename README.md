@@ -198,13 +198,16 @@ thresholds set once. The web page has a guided calibration:
 1. With the machine **off** (and the house as busy as it usually is), press
    **Measure idle (30 s)**.
 2. With the machine **running** normally, press **Measure running (30 s)**.
-3. Press **Use suggested thresholds**, check the numbers and **Save** (user name
-   `admin`, the admin password).
+3. Press **Use suggested thresholds**, check the numbers and **Save** (log in
+   first, user `admin` and the admin password).
 
 The suggestion puts both thresholds between the loudest idle moment and the
-quietest running moment (start at 60% and stop at 30% of the gap). If the page
-says running is too close to idle, mount the box more firmly or closer to the
-motor and measure again.
+quietest running moment (start at 60% and stop at 30% of the gap). If the running
+level dips close to idle now and then (a microwave, a washer pausing), it uses the
+running **average** instead (start at 50%, stop at 25% of the gap), and if idle
+bumps reach the running level it measures from the idle average; the start and
+stop delays ride out those short overlaps. If the page still says running is too
+close to idle, mount the box more firmly or closer to the motor and measure again.
 
 | Setting | Default | Meaning |
 |---|---|---|
