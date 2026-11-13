@@ -4,7 +4,7 @@
 
 A two-part printed case (tray + lid) for the device monitor carrier PCB
 (`../devmon_carrier.kicad_pcb`: ESP32-C3 SuperMini, GY-346 / ADXL346 module and one
-bulk capacitor). Outside it is **52.3 x 31 x 23 mm**. The case is the same whether or not C1 is fitted
+bulk capacitor). Outside it is **55.8 x 31 x 23 mm**. The case is the same whether or not C1 is fitted
 (the board works without it; it can be added later if needed).
 
 | File | What it is |
@@ -39,7 +39,7 @@ It is built from the author's two earlier cases:
 |---|---|---|
 | H5 (3.75, 8), H6 (3.75, 16) | standoff + pin | nothing (the ESP module is above them); these take the USB plug's push |
 | H1 (24.4, 12) | standoff + short pin, stopping inside the hole | solid 3.4 mm post pressing on the board around the hole (too tight between the ESP and J1 for a hollow cap) |
-| H2 (41.5, 17) | standoff + pin | hollow 4.5 mm cap over the pin, 0.3 mm above the board |
+| H2 (45.3, 17.5) | standoff + pin | hollow 4.5 mm cap over the pin, 0.3 mm above the board |
 
 The board sits on 3 mm standoffs, so its solder tails clear the floor. Once closed, the
 H1 post and H2 cap hold the board down against its standoffs, so the accelerometer is

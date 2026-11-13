@@ -42,8 +42,8 @@ $fn = 40;
 
 // ======================= CARRIER (from the KiCad board) =======================
 // Keep these in step with hw/devmon_carrier.kicad_pcb (hw/tools/gen_carrier.py).
-// Values below are the v1.0 board's.
-pcb_l = 47.0;                // board length (x)
+// Values below are the v1.0 board's (50.5 mm long since the GY-346 was measured at 14 x 21).
+pcb_l = 50.5;                // board length (x)
 pcb_w = 24.0;                // board width (y)
 pcb_t = 1.6;
 
@@ -57,7 +57,7 @@ holes = [
   [ 3.75,  8.0, "pin"],      // H5  under the ESP32, USB end: takes the USB plug's push
   [ 3.75, 16.0, "pin"],      // H6
   [24.4,  12.0, "solid"],    // H1  between the ESP32 and the ADXL346 header
-  [41.5,  17.0, "hook"],     // H2  far end, beside the cap (nothing within 5.6 mm)
+  [45.3,  17.5, "hook"],     // H2  far end, beside the cap (GY-346 edge x 40.83, cap body to y 10)
 ];
 
 // Parts, for the clash check and the preview (KiCad coordinates, heights above the
@@ -68,11 +68,11 @@ esp_hdr  = 2.54;             // header spacer under the module
 esp_pcb  = 1.2;              // module PCB thickness
 esp_parts_h = 1.6;           // chip / LDO / buttons above the module PCB (buttons ~1.5-2: see btn_*)
 gy_x0 = 28.1 - 1.27;         // GY-346 lies flat from its J1 header row toward +x (as on sm2k)
-gy_size = [9, 20];           // GY-346 board (user-measured on sm2k)
+gy_size = [14, 21];          // GY-346 board (user-measured 2026-11-13)
 gy_z  = 2.5;                 // module soldered on its own header, board 2.5 mm up
 gy_parts_h = 1.2;            // ADXL346 + regulator on top of the module
 j1_xy = [28.1, 3.11];        // J1 pin 1, 1x8 down the board (y)
-cap_xy = [41.5, 6.0];        // C1 body centre (CP_Radial_D8.0 P2.5, leads at x 40.25 / 42.75)
+cap_xy = [45.3, 6.0];        // C1 body centre (CP_Radial_D8.0 P2.5, leads at x 44.05 / 46.55)
 cap_d = 8;                   // envelope: 470 uF/6.3 V is 6.3-8 x 11-12; 100 uF/10 V is 5 x 11
 cap_h = 12.5;                // C1 can be left off the board; the case is sized for it either way
 
@@ -135,7 +135,7 @@ solid_od = 3.4;              // H1 post: tight between the ESP's edge (x 22.5) a
 // GY-346 (board x 33-39 has no solder tails) and out the other side, e.g. round
 // a pipe. Set strap = false for a plain case (stick it on with VHB tape).
 strap = true;
-strap_kicad_x = 35.5;         // between J1's tails (x 28.1) and H2's boss (x 39-44); jumpers at 30.85-32.15 are flat
+strap_kicad_x = 35.5;         // between J1's tails (x 28.1) and C1's leads / H2's boss (x 42.8+); jumpers at 30.85-32.15 are flat
 strap_w = 5.5; strap_h = 2;
 strap_slot_w = strap_w + 1;
 strap_slot_h = strap_h + 0.6;   // stays under the board (standoff_h)

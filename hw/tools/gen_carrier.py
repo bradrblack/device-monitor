@@ -39,7 +39,7 @@ OX, OY = 100.0, 100.0          # board origin on the page
 # ---------------------------------------------------------------------------
 # Board outline
 # ---------------------------------------------------------------------------
-BOARD_W, BOARD_H = 47.0, 24.0
+BOARD_W, BOARD_H = 50.5, 24.0
 
 # ---------------------------------------------------------------------------
 # Parts: ref -> (lib_symbol, footprint, value, (x, y) of footprint origin, rot,
@@ -54,7 +54,7 @@ PARTS = {
            {"1": NC, "2": "GND", "3": "+3V3", "4": "INT1", "5": NC, "6": NC, "7": NC, "8": NC,
             "9": "SDA", "10": "SCL", "11": NC, "12": NC, "13": NC, "14": NC, "15": NC, "16": NC},
            (63.5, 88.9), "F"),
-    # GY-346 (ADXL346) module on its own 1x8 header, lying flat toward +x (9 x 20 mm).
+    # GY-346 (ADXL346) module on its own 1x8 header, lying flat toward +x (14 x 21 mm, user-measured 2026-11-13).
     # Same pin order and position as sm2k: VIN GND SCL SDA SDO CS INT2 INT1.
     "J1": ("Connector_Generic:Conn_01x08", "Connector_PinHeader_2.54mm:PinHeader_1x08_P2.54mm_Vertical",
            "GY-346 ADXL346", (28.1, 3.11), 0,
@@ -64,7 +64,7 @@ PARTS = {
     # OPTIONAL bulk cap across 3V3/GND right after the ADXL (sm2k's I2C fix). 100-470 uF,
     # up to 8 mm diameter x 12 mm tall, 2.5 mm lead pitch.
     "C1": ("Device:C_Polarized", "Capacitor_THT:CP_Radial_D8.0mm_P2.50mm",
-           "100-470uF opt", (40.25, 6.0), 0, {"1": "+3V3", "2": "GND"}, (88.9, 132.08), "F"),
+           "100-470uF opt", (44.05, 6.0), 0, {"1": "+3V3", "2": "GND"}, (88.9, 132.08), "F"),
     # Solder jumpers on the BOTTOM side, open by default (the board works like the
     # sm2k bench setup with all three open). Bridge with a blob of solder:
     #   JP1 ADXL INT1 -> GPIO4 (optional wake/interrupt line, firmware doesn't use it yet)
@@ -80,7 +80,7 @@ PARTS = {
     # take the USB plug's force), H1 between ESP and ADXL and H2 at the far end get lid
     # hook posts that clamp the board.
     "H1": ("Mechanical:MountingHole", "Custom_Library:CasePin_Hole_2.5mm", "pin", (24.4, 12.0), 0, {}, (215.9, 154.94), "F"),
-    "H2": ("Mechanical:MountingHole", "Custom_Library:CasePin_Hole_2.5mm", "pin", (41.5, 17.0), 0, {}, (226.06, 154.94), "F"),
+    "H2": ("Mechanical:MountingHole", "Custom_Library:CasePin_Hole_2.5mm", "pin", (45.3, 17.5), 0, {}, (226.06, 154.94), "F"),
     "H5": ("Mechanical:MountingHole", "Custom_Library:CasePin_Hole_2.5mm", "pin", (3.75, 8.0), 0, {}, (256.54, 154.94), "F"),
     "H6": ("Mechanical:MountingHole", "Custom_Library:CasePin_Hole_2.5mm", "pin", (3.75, 16.0), 0, {}, (266.7, 154.94), "F"),
     "#FLG1": ("power:PWR_FLAG", None, "PWR_FLAG", None, 0, {"1": "GND"}, (88.9, 154.94), "F"),
@@ -94,8 +94,8 @@ PWR, SIG = 0.5, 0.25
 TRACKS = [
     # 3V3: ESP -> ADXL (as sm2k), then along the top edge to C1; C1 -> JP2 on the bottom.
     ("+3V3", F, PWR, ["U1.3", (7.44, 6.6), (21.0, 6.6), (24.5, 3.11), "J1.1"]),
-    ("+3V3", F, PWR, ["J1.1", (29.91, 1.3), (37.0, 1.3), (40.25, 4.55), "C1.1"]),
-    ("+3V3", B, SIG, ["C1.1", (36.0, 10.25), (36.0, 14.0), (34.19, 15.81), "JP2.2"]),
+    ("+3V3", F, PWR, ["J1.1", (29.91, 1.3), (42.75, 1.3), (44.05, 2.6), "C1.1"]),
+    ("+3V3", B, SIG, ["C1.1", (39.8, 10.25), (36.0, 10.25), (36.0, 14.0), (34.19, 15.81), "JP2.2"]),
     # I2C under the ESP, exactly as sm2k: SCL on top, SDA on the bottom then up a via.
     ("SCL", F, SIG, ["U1.10", (6.17, 18.35), (6.17, 9.46), (7.44, 8.19), "J1.3"]),
     ("SDA", B, SIG, ["U1.9", (3.36, 18.62), (3.98, 18.0), (9.5, 18.0), (9.5, 10.0)]),
@@ -111,14 +111,14 @@ TRACKS = [
 VIAS = [
     ("SDA", (9.5, 10.0)),
     # GND stitching between the two pours
-    ("GND", (18.0, 17.3)), ("GND", (2.0, 22.8)), ("GND", (45.5, 22.5)),
-    ("GND", (38.0, 21.0)), ("GND", (45.5, 11.5)), ("GND", (34.0, 3.5)),
+    ("GND", (18.0, 17.3)), ("GND", (2.0, 22.8)), ("GND", (49.0, 22.5)),
+    ("GND", (38.0, 21.0)), ("GND", (49.0, 12.0)), ("GND", (34.0, 3.5)),
 ]
 
 # Silkscreen text: (text, (x, y), size, layer, rotation)
 SILK = [
     ("DEVICE MONITOR", (16.5, 22.9), 0.9, "F.SilkS", 0),
-    ("v1.0", (44.0, 21.6), 0.8, "F.SilkS", 90),
+    ("v1.0", (49.0, 21.6), 0.8, "F.SilkS", 90),
     ("USB", (1.2, 12.0), 0.8, "F.SilkS", 90),
     # Bottom side (mirrored so it reads correctly from underneath)
     ("github.com/bradrblack/device-monitor", (23.5, 1.2), 1.0, "B.SilkS", 0),
@@ -134,7 +134,7 @@ PIN_LABELS = {  # labels beside each socket pin, to check module orientation bef
 # Module outlines on F.Fab: (label, x0, y0, x1, y1)
 FAB = [
     ("ESP32-C3 SuperMini", 0.0, 3.0, 22.5, 21.0),
-    ("GY-346 9x20, 2.5 up", 26.83, 2.0, 35.83, 22.0),
+    ("GY-346 14x21, 2.5 up", 26.83, 1.5, 40.83, 22.5),
 ]
 
 # ===========================================================================
