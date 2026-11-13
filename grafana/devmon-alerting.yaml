@@ -1,0 +1,81 @@
+# Grafana alerting provisioning: "Device monitor silent" -> ntfy.
+#
+# Fires, per board, when nothing from it (readings, events, boots) has reached
+# InfluxDB for 30 minutes -- a dead board, power loss, Wi-Fi gone, Telegraf or
+# InfluxDB down, or a firmware hang the watchdogs missed. The board can't report
+# any of those itself. The 10-minute readings are the heartbeat. A board counts
+# if it sent anything in the last 7 days, so a retired board stops alerting a
+# week after it goes quiet.
+#
+# Install: fill in the three CHANGE_ME values, copy to Grafana's
+# provisioning/alerting/ directory (e.g. /etc/grafana/provisioning/alerting/)
+# and restart Grafana. The rule routes straight to its own contact point
+# (notification_settings), so your notification policies are left alone.
+# Provisioned items are read-only in the UI; edit this file instead.
+#
+# The contact point is a plain webhook using ntfy's built-in Grafana template
+# (template=grafana). A "resolved" push follows when data arrives again.
+# Keep "{{ }}" out of the URL: Grafana runs it through its own templating.
+
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: ntfy-devmon
+    receivers:
+      - uid: ntfy-devmon
+        type: webhook
+        settings:
+          # Your ntfy topic (the one set on the boards' web pages).
+          url: "https://ntfy.sh/CHANGE_ME_TOPIC?template=grafana&ta=warning"
+          httpMethod: POST
+        disableResolveMessage: false
+
+groups:
+  - orgId: 1
+    name: devmon
+    folder: Device Monitor
+    interval: 5m
+    rules:
+      - uid: devmon-no-data
+        title: Device monitor silent
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 604800
+              to: 0
+            # UID of your InfluxDB (Flux) data source: Connections > Data sources,
+            # it's the last part of the data source's URL.
+            datasourceUid: CHANGE_ME_DATASOURCE_UID
+            model:
+              refId: A
+              # Minutes since each board's last point.
+              query: |
+                from(bucket: "CHANGE_ME_BUCKET")
+                  |> range(start: -7d)
+                  |> filter(fn: (r) => r._measurement =~ /^appliance_/)
+                  |> keep(columns: ["_time", "device"])
+                  |> group(columns: ["device"])
+                  |> max(column: "_time")
+                  |> map(fn: (r) => ({device: r.device, _value: float(v: uint(v: now()) - uint(v: r._time)) / 60000000000.0}))
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [30]
+        noDataState: OK
+        execErrState: Error
+        for: 0s
+        annotations:
+          summary: "No data from device monitor {{ $labels.device }} for 30 minutes."
+          description: >-
+            Check that the board has power and Wi-Fi (open http://<name>.local/, or
+            ping it) and that InfluxDB (and Telegraf, if used) is running.
+        notification_settings:
+          receiver: ntfy-devmon
