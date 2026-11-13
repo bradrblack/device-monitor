@@ -41,7 +41,7 @@ the board and press **B** before you plot it yourself.
 
 ## Board facts
 
-- **47.0 x 24.0 mm**, 1.6 mm FR-4, 2 layers, GND pour on both sides.
+- **50.5 x 24.0 mm**, 1.6 mm FR-4, 2 layers, GND pour on both sides.
 - 0.2 mm minimum track and clearance, 0.3 mm vias, 0.5 mm copper-to-edge. Any basic
   2-layer order works (JLCPCB, PCBWay, OSH Park).
 - Everything you solder is through-hole. The three solder jumpers on the bottom are
@@ -81,7 +81,7 @@ the board and press **B** before you plot it yourself.
 |---|---|---|---|
 | U1 | 1 | ESP32-C3 SuperMini | The external-antenna "v2" or the plain one both fit. Solder it with its USB-C facing the "USB" edge, parts side up |
 | - | 2 | 1x8 male pin header, 2.54 mm | Usually supplied with the SuperMini |
-| J1 | 1 | GY-346 (ADXL346) module, 20 x 9 mm | Solder it on its own 1x8 male header (2.5 mm plastic spacer) |
+| J1 | 1 | GY-346 (ADXL346) module, 14 x 21 mm | Solder it on its own 1x8 male header (2.5 mm plastic spacer) |
 | C1 | 0-1 | **Optional:** 100-470 uF, 6.3 V or higher, radial electrolytic | 2.5 mm lead pitch, at most 8 mm diameter and 12.5 mm tall (the case allows this). 470 uF 10 V 8x12 or 220 uF 6.3x11 are typical |
 | PCB | 1 | This board | Gerber zip above |
 
@@ -112,22 +112,22 @@ carrier.
 
 | Item | Position / size | Notes |
 |---|---|---|
-| Board outline | 0..47.0 x 0..24.0, 1.6 thick | square corners |
+| Board outline | 0..50.5 x 0..24.0, 1.6 thick | square corners |
 | H5, H6 | (3.75, 8.0), (3.75, 16.0), 2.5 mm NPTH | under the ESP at the USB end, floor pins only |
 | H1 | (24.4, 12.0), 2.5 mm NPTH | between ESP and GY-346, which leaves room for a 3.4 mm post (ESP edge x 22.5, GY-346 edge x 26.83) |
-| H2 | (41.5, 17.0), 2.5 mm NPTH | far end; nothing within 5.6 mm, so a 4.5 mm hook post fits |
+| H2 | (45.3, 17.5), 2.5 mm NPTH | far end; GY-346 edge 4.5 mm away, cap body 7.5 mm, so a 4.5 mm hook post fits |
 | ESP32-C3 SuperMini | x 0..22.5, y 3..21 | module PCB top 3.74 above the carrier top (2.54 header + 1.2 PCB) |
 | USB-C | centred on y 12.0, overhangs x = 0 | about 9 x 3.2 mm, bottom flush with the module PCB top |
 | RESET button | (9.0, 8.0) | on the SuperMini, measured on sm2k |
 | J1 pins | x 28.1, y 3.11..20.89 (2.54 pitch) | |
-| GY-346 module | x 26.83..35.83, y 2.0..22.0 | its board 2.5 mm above the carrier top, about 5.5 mm to its tallest part |
-| C1 | centre (41.5, 6.0), leads (40.25, 6.0) + and (42.75, 6.0) | up to 8 mm dia x 12.5 mm above the carrier top |
+| GY-346 module | x 26.83..40.83, y 1.5..22.5 | its board 2.5 mm above the carrier top, about 5.5 mm to its tallest part |
+| C1 | centre (45.3, 6.0), leads (44.05, 6.0) + and (46.55, 6.0) | up to 8 mm dia x 12.5 mm above the carrier top |
 | Bottom side | THT tails: U1 rows y 4.38 and 19.62 (x 2.36..20.14), J1 column x 28.1, C1 leads | flat solder jumpers at x 30.85..32.15, y 13.27 / 15.81 / 20.89. No tail is within 3.9 mm of any hole |
 
 ## Differences from the sm2k carrier
 
-- 47 mm long instead of 75.5. No AHT20 (J2), no SR04 lead pads (J3), no second cap.
-- H3 and H4 (under the sm2k's SR04) are gone. H2 moved to the far end at (41.5, 17.0).
+- 50.5 mm long instead of 75.5. No AHT20 (J2), no SR04 lead pads (J3), no second cap.
+- H3 and H4 (under the sm2k's SR04) are gone. H2 moved to the far end at (45.3, 17.5).
 - GPIO 4 now goes to the ADXL's INT1 through JP1. On sm2k it was the SR04 Echo, and
   GPIO 3 (Trig) is unused.
 - New bottom-side solder jumpers JP1-JP3.
