@@ -4,15 +4,13 @@
 
 A two-part printed case (tray + lid) for the device monitor carrier PCB
 (`../devmon_carrier.kicad_pcb`: ESP32-C3 SuperMini, GY-346 / ADXL346 module and one
-bulk capacitor). Outside it is **52.3 x 31 x 23 mm**. C1 is optional on the board: without it,
-print the `-nocap` files, which are 6 mm lower (**52.3 x 31 x 17 mm**). The taller case also
-works without the capacitor.
+bulk capacitor). Outside it is **52.3 x 31 x 23 mm**. The case is the same whether or not C1 is fitted
+(the board works without it; it can be added later if needed).
 
 | File | What it is |
 |---|---|
 | `device_monitor_case.scad` | The OpenSCAD source. Everything is a parameter at the top. |
 | `tray.stl`, `lid.stl` | Ready to print. The lid is exported upside down (ceiling on the bed). |
-| `tray-nocap.stl`, `lid-nocap.stl` | The same without C1 (`has_cap = false`). |
 | `check_case.sh` | Renders the clash checks: lid against tray, and each against the board and its parts. Run it after any change. |
 | `case-*.png` | Renders: closed, carrier in the tray, the lid from inside, a section. |
 
@@ -71,6 +69,15 @@ without tools.
 It lands on the SuperMini's RESET button (pressing it twice reopens the Wi-Fi setup
 portal; see the main README).
 
+## Antenna
+
+The SuperMini v2's external ribbon antenna (about 40 x 11 mm) sticks to the inside of the
+lid's skirt on the side away from the capacitor (the side with the label on the tray). A
+small ledge along the skirt's lower edge sets its bottom edge, so it sits square, and the
+ceiling sets its top. Stick it on before closing the case and route the cable to the
+module's u.FL connector. The ledge stops short of the two wedge pockets so they still flex.
+Set `antenna = false` to leave the ledge off.
+
 ## Mounting
 
 The underside is flat, so it couples well to whatever it sits on. Use VHB tape on a
@@ -90,8 +97,5 @@ openscad --export-format binstl -o tray.stl -D 'part="tray"' device_monitor_case
 openscad --export-format binstl -o lid.stl  -D 'part="lid"'  device_monitor_case.scad
 ```
 
-The cavity height follows the tallest part: the 12.5 mm capacitor with `has_cap = true`,
-the USB-C connector without it. A shorter capacitor (`cap_h`) makes the case lower. For the
-no-capacitor files, add `-D has_cap=false` and name them `tray-nocap.stl` / `lid-nocap.stl`.
-`check_case.sh` checks both versions. `part="section"` and
+The cavity height follows the tallest part, the 12.5 mm capacitor (`cap_h`). `part="section"` and
 `part="fit"` are useful previews.

@@ -74,10 +74,16 @@ gy_parts_h = 1.2;            // ADXL346 + regulator on top of the module
 j1_xy = [28.1, 3.11];        // J1 pin 1, 1x8 down the board (y)
 cap_xy = [41.5, 6.0];        // C1 body centre (CP_Radial_D8.0 P2.5, leads at x 40.25 / 42.75)
 cap_d = 8;                   // envelope: 470 uF/6.3 V is 6.3-8 x 11-12; 100 uF/10 V is 5 x 11
-cap_h = 12.5;
-// C1 is optional on the board. Without it the case can be 6 mm lower:
-// has_cap = false -> tray-nocap.stl / lid-nocap.stl. (The taller case also works without the cap.)
-has_cap = true;
+cap_h = 12.5;                // C1 can be left off the board; the case is sized for it either way
+
+// External ribbon antenna (SuperMini v2's u.FL antenna), stuck to the inside of the
+// y = 0 skirt, away from the capacitor. A ledge along the skirt's lower edge locates
+// its bottom edge; the ceiling locates the top. The ledge stops short of the two
+// flexing wedge pockets so it doesn't stiffen them.
+antenna = true;
+ant_w = 11; ant_l = 40; ant_t = 0.3;
+ledge_h = 0.8;               // ledge height (z)
+ledge_p = 0.6;               // how far it stands off the skirt's inner face
 
 // ======================= ESP32-C3 SuperMini USB-C and RESET =======================
 // Same module position, USB-C overhang and RESET spot as the fan and sump cases.
@@ -151,7 +157,7 @@ pcb_top = standoff_h + pcb_t;
 esp_top = pcb_top + esp_hdr + esp_pcb;                    // module PCB top
 in_w = pcb_w + 2 * side_gap;
 in_l = pcb_x0 + pcb_l + end_gap;
-tallest = max(has_cap ? cap_h : 0, gy_z + 1.6 + gy_parts_h, esp_hdr + esp_pcb + usb_h);
+tallest = max(cap_h, gy_z + 1.6 + gy_parts_h, esp_hdr + esp_pcb + usb_h);
 in_h = ceil(pcb_top + tallest + top_gap);
 out_l = in_l + 2 * wall; out_w = in_w + 2 * wall;
 pcb_y0 = (in_w - pcb_w) / 2;
@@ -170,6 +176,9 @@ btn_tube_z0 = esp_top + btn_top_above_esp + btn_gap;
 skirt_z0 = pcb_top + 1;
 bump_zc  = skirt_z0 + 1.6;
 skirt_snap_x = [round(in_l * 0.22), round(in_l * 0.78)];
+ant_x0 = (in_l - ant_l) / 2;
+ant_z0 = in_h - ant_w - 0.2;          // antenna's lower edge (cavity z), 0.2 under the ceiling
+assert(ant_z0 - ledge_h >= skirt_z0, "antenna too wide for the skirt");
 
 assert(usb_z1 < in_h - 1, "USB port reaches the ceiling");
 assert(skirt_gap + skirt_t < side_gap + 1.8, "skirts reach over the board's components");
@@ -261,6 +270,13 @@ module lid() {
     union() {
       translate([0, 0, floor_t + in_h]) rbox(out_l, out_w, lid_t, corner_r);
       at_inner() for (side = [0, 1]) skirt(side);
+      // antenna ledge on the y = 0 skirt, in segments between the wedge pockets
+      if (antenna) at_inner() {
+        cuts = [for (x = skirt_snap_x) [x - pad_w / 2 - 0.5, x + pad_w / 2 + 0.5]];
+        segs = [[0.5, cuts[0][0]], [cuts[0][1], cuts[1][0]], [cuts[1][1], in_l - 0.9]];
+        for (sg = segs) if (sg[1] > sg[0])
+          translate([sg[0], skirt_gap + skirt_t - 0.01, ant_z0 - ledge_h]) cube([sg[1] - sg[0], ledge_p + 0.01, ledge_h]);
+      }
       // end wall at the USB end: full width, sits on the tray's stub wall, holds the port's upper half
       intersection() {
         rbox(out_l, out_w, floor_t + in_h + 0.01, corner_r);
@@ -339,7 +355,7 @@ module parts_dummies() at_inner() {
   color("purple") kbox([gy_x0, esp_xy[1] - gy_size[1] / 2], [gy_x0 + gy_size[0], esp_xy[1] + gy_size[1] / 2], gy_z, gy_z + 1.6);
   color("gray") kbox([gy_x0 + 3, esp_xy[1] - 3], [gy_x0 + 7, esp_xy[1] + 3], gy_z + 1.6, gy_z + 1.6 + gy_parts_h);
   // bulk cap
-  if (has_cap) color("steelblue") translate(concat(bxy(cap_xy), [pcb_top])) cylinder(d = cap_d, h = cap_h);
+  color("steelblue") translate(concat(bxy(cap_xy), [pcb_top])) cylinder(d = cap_d, h = cap_h);
 }
 // Solder tails under the board (ESP + J1 header pins, cap leads): what the floor and strap must clear.
 module tails_dummies() at_inner() color("gold") {
@@ -350,7 +366,9 @@ module tails_dummies() at_inner() color("gold") {
 module tie_dummy() if (strap) color("black")
   translate([wall + bxy([strap_kicad_x, 0])[0] - strap_w / 2, -0.5, floor_t + 0.2]) cube([strap_w, out_w + 1, strap_h - 0.4]);
 
-module everything_else() { board_dummy(); parts_dummies(); tails_dummies(); tie_dummy(); }
+module antenna_dummy() if (antenna) color("orange") at_inner()
+  translate([ant_x0, skirt_gap + skirt_t, ant_z0]) cube([ant_l, ant_t, ant_w]);
+module everything_else() { board_dummy(); parts_dummies(); tails_dummies(); tie_dummy(); antenna_dummy(); }
 
 echo(str("case outside ", out_l, " x ", out_w, " x ", floor_t + in_h + lid_t, " mm; cavity ", in_l, " x ", in_w, " x ", in_h));
 
@@ -367,4 +385,4 @@ else if (part == "section") intersection() {
   union() { tray(); lid(); board_dummy(); parts_dummies(); }
   translate([-5, wall + bxy(esp_xy)[1], -10]) cube([200, 50, 60]);
 }
-else { color("steelblue") tray(); color("white", 0.4) lid(); color("green") board_dummy(); parts_dummies(); }
+else { color("steelblue") tray(); color("white", 0.4) lid(); color("green") board_dummy(); parts_dummies(); antenna_dummy(); }
