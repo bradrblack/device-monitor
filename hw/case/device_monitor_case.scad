@@ -146,8 +146,6 @@ strap_slot_h = strap_h + 0.6;   // stays under the board (standoff_h)
 
 // ======================= LID TOP =======================
 dot_spacing = 5;
-dot_r = 1.8;
-dot_depth = 0.35;
 vent_hole_d = 3;
 texture_margin = 5;
 label = "DEVICE MONITOR";
@@ -302,10 +300,9 @@ module lid() {
   }
 }
 
-// Lid top: a 5 mm grid centred on the lid. Two rows of 3 mm vent holes (airflow,
-// and the onboard LED shows through them) with a row of dimples either side of the
-// centre line (fan-case look). Holes and dimples keep clear of the reset bore and
-// of the posts' roots. The rows stay inside the skirts.
+// Lid top: two rows of 3 mm vent holes on a 5 mm pitch (airflow, and the onboard
+// LED shows through them), one either side of the centre line. No dimples.
+// Holes keep clear of the reset bore and of the posts' roots, and stay inside the skirts.
 module lid_texture() {
   top = floor_t + in_h + lid_t;
   n_cols = floor((out_l - 2 * texture_margin) / dot_spacing) + 1;
@@ -317,11 +314,10 @@ module lid_texture() {
   function near(p, list, r) = len([for (q = list) if (norm(p - q) < r) 1]) > 0;
   for (i = [0 : n_cols - 1]) {
     x = u0 + i * dot_spacing;
-    for (k = [-1.5, -0.5, 0.5, 1.5]) {
+    for (k = [-1.5, 1.5]) {
       p = [x, yc + k * dot_spacing];
       if (norm(p - btn) > 4.6 && !near(p, posts, 4.2) && x > wall + 2.5 && x < out_l - wall - 2)
         if (abs(k) > 1) translate([p[0], p[1], top - lid_t - 1]) cylinder(d = vent_hole_d, h = lid_t + 2, $fn = 24);
-        else translate([p[0], p[1], top + dot_r - dot_depth]) sphere(r = dot_r, $fn = 16);
     }
   }
 }
