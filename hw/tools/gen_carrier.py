@@ -61,10 +61,10 @@ PARTS = {
            {"1": "+3V3", "2": "GND", "3": "SCL", "4": "SDA", "5": "ADXL_SDO", "6": "ADXL_CS",
             "7": NC, "8": "ADXL_INT1"},
            (139.7, 63.5), "F"),
-    # Bulk cap across 3V3/GND right after the ADXL (sm2k's I2C fix). 100-470 uF,
+    # OPTIONAL bulk cap across 3V3/GND right after the ADXL (sm2k's I2C fix). 100-470 uF,
     # up to 8 mm diameter x 12 mm tall, 2.5 mm lead pitch.
     "C1": ("Device:C_Polarized", "Capacitor_THT:CP_Radial_D8.0mm_P2.50mm",
-           "100-470uF", (40.25, 6.0), 0, {"1": "+3V3", "2": "GND"}, (88.9, 132.08), "F"),
+           "100-470uF opt", (40.25, 6.0), 0, {"1": "+3V3", "2": "GND"}, (88.9, 132.08), "F"),
     # Solder jumpers on the BOTTOM side, open by default (the board works like the
     # sm2k bench setup with all three open). Bridge with a blob of solder:
     #   JP1 ADXL INT1 -> GPIO4 (optional wake/interrupt line, firmware doesn't use it yet)

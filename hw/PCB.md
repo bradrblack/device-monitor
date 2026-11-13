@@ -62,8 +62,10 @@ the board and press **B** before you plot it yourself.
 
 - The status LED is the SuperMini's own LED on GPIO 8. Nothing on the carrier
   touches GPIO 2, 8 or 9 (the strapping pins).
-- **C1** is a 100-470 uF electrolytic across 3V3/GND right next to the accelerometer.
-  On the sm2k bench, bulk caps at the sensors were what made the I2C bus reliable.
+- **C1 is optional.** It is a 100-470 uF electrolytic across 3V3/GND right next to
+  the accelerometer. The original device-monitor ran without one. On the sm2k bench,
+  though, bulk caps at the sensors were what made the I2C bus reliable, so fit one if
+  the accelerometer ever drops out.
 - **The solder jumpers all ship open.** With all three open, the board matches the
   sm2k setup, which is known to work (the GY-346's own resistors put it in I2C mode at
   address 0x53).
@@ -80,7 +82,7 @@ the board and press **B** before you plot it yourself.
 | U1 | 1 | ESP32-C3 SuperMini | The external-antenna "v2" or the plain one both fit. Solder it with its USB-C facing the "USB" edge, parts side up |
 | - | 2 | 1x8 male pin header, 2.54 mm | Usually supplied with the SuperMini |
 | J1 | 1 | GY-346 (ADXL346) module, 20 x 9 mm | Solder it on its own 1x8 male header (2.5 mm plastic spacer) |
-| C1 | 1 | 100-470 uF, 6.3 V or higher, radial electrolytic | 2.5 mm lead pitch, at most 8 mm diameter and 12.5 mm tall (the case allows this). 470 uF 10 V 8x12 or 220 uF 6.3x11 are typical |
+| C1 | 0-1 | **Optional:** 100-470 uF, 6.3 V or higher, radial electrolytic | 2.5 mm lead pitch, at most 8 mm diameter and 12.5 mm tall (the case allows this). 470 uF 10 V 8x12 or 220 uF 6.3x11 are typical |
 | PCB | 1 | This board | Gerber zip above |
 
 ## Assembly
@@ -88,7 +90,7 @@ the board and press **B** before you plot it yourself.
 1. **Test the GY-346 first.** Connect it to the SuperMini on Dupont wires
    (VIN-3V3, GND-GND, SCL-GPIO6, SDA-GPIO5), flash the firmware and check that the
    accelerometer is detected. Desoldering an 8-pin module afterwards is a pain.
-2. **C1:** long lead (+) into the **square** pad (marked +). Push it flat to the board.
+2. **C1 (optional):** long lead (+) into the **square** pad (marked +). Push it flat to the board.
 3. **ESP32 SuperMini:** put both 1x8 male headers into the carrier (short pins down),
    lay the SuperMini on top with **USB-C over the "USB" edge** and solder the top
    side, then flip it and solder the bottom. The USB-C connector overhangs the board
