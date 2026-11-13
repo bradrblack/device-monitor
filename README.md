@@ -95,6 +95,22 @@ The KiCad project, Gerbers, BOM, assembly steps and the dimensions the case is
 built around are in **[hw/PCB.md](hw/PCB.md)**. Upload
 `hw/devmon_carrier-v1.0-gerbers.zip` to any PCB fab as a basic 2-layer, 1.6 mm order.
 
+## Carrier PCB
+
+A 47 x 24 mm carrier board holds the ESP32-C3 SuperMini and a GY-346 (ADXL346)
+module, with room for an optional 100-470 uF bulk cap that helps keep the I2C bus reliable. Its pinout matches the
+table above: SDA on GPIO 5, SCL on GPIO 6. Three optional solder jumpers on the back,
+all left open, connect INT1 to GPIO 4, CS to 3V3 and SDO to GND. The KiCad 10 project,
+Gerbers, BOM, assembly steps and the dimensions the case is built around are in
+[hw/PCB.md](hw/PCB.md).
+
+| Part | Qty |
+|---|---|
+| ESP32-C3 SuperMini (with its two 1x8 headers) | 1 |
+| GY-346 ADXL346 module (on its own 1x8 header) | 1 |
+| 100-470 uF radial electrolytic, 2.5 mm pitch, max 8 x 12.5 mm (optional) | 0-1 |
+| Carrier PCB (`hw/devmon_carrier-v1.0-gerbers.zip`) | 1 |
+
 ## Case
 
 <img src="hw/case/case-closed.png" alt="Printed case" width="400"/>
