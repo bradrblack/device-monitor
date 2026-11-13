@@ -114,14 +114,13 @@
 #define NVS_NS "devmon"
 
 const char *BANNER =
-// Starts with an empty line: the first characters printed after a reset can be
-// lost while the USB serial port reconnects, which shifted the top line.
+// figlet "standard" font. Starts on a fresh line after the boot messages.
 R"(
-     _                                         _ _
-  __| | _____   __  _ __ ___   ___  _ __  (_) |_ ___  _ __
- / _` |/ _ \ \ / / | '_ ` _ \ / _ \| '_ \ | | __/ _ \| '__|
-| (_| |  __/\ V /  | | | | | | (_) | | | || | || (_) | |
- \__,_|\___| \_/   |_| |_| |_|\___/|_| |_||_|\__\___/|_|
+     _                                    _ _
+  __| | _____   __  _ __ ___   ___  _ __ (_) |_ ___  _ __
+ / _` |/ _ \ \ / / | '_ ` _ \ / _ \| '_ \| | __/ _ \| '__|
+| (_| |  __/\ V /  | | | | | | (_) | | | | | || (_) | |
+ \__,_|\___| \_/   |_| |_| |_|\___/|_| |_|_|\__\___/|_|
 )";
 
 // ---- Pins (match the carrier PCB in hw/) --------------------------------------
