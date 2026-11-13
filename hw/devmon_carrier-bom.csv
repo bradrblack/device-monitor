@@ -1,4 +1,4 @@
 "Reference","Value","Footprint","QUANTITY"
-"C1","100-470uF","Capacitor_THT:CP_Radial_D8.0mm_P2.50mm","1"
+"C1","100-470uF opt","Capacitor_THT:CP_Radial_D8.0mm_P2.50mm","1"
 "J1","GY-346 ADXL346","Connector_PinHeader_2.54mm:PinHeader_1x08_P2.54mm_Vertical","1"
 "U1","ESP32-C3_SuperMini","Custom_Library:ESP32-C3_SuperMini_FaceUp","1"
