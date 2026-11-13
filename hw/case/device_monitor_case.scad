@@ -3,9 +3,11 @@
 // Built from the two earlier cases by the same author:
 //   - github.com/bradrblack/rf-ceiling-fan-remote  hw/case/fan_dongle_case.scad
 //       standoff pins through the carrier's holes (no screws), caps (hook posts)
-//       hanging from the lid that clamp the board, the reset-button guide tube,
-//       and the USB-C port passing through the LID's end wall (the tray's USB end
-//       is only a low stub wall below the port).
+//       hanging from the lid that clamp the board, and the reset-button guide tube.
+//   - The USB-C opening is split as on sump-master-2000: the tray's stub wall at
+//     the USB end holds the lower half of the port and the lid's end wall the
+//     upper half, so the board drops straight into the tray (the fan case's
+//     port wholly in the lid meant levering the connector into it).
 //   - github.com/bradrblack/sump-master-2000  hw/case/sump_case.scad
 //       the closure: lid skirts slide down inside full-height tray walls, and a
 //       rounded wedge on each skirt pocket clicks into a divot (seat) in the tray
@@ -18,16 +20,9 @@
 // clearance), so the fit doesn't creep loose. The 35 deg flanks let a firm pull
 // open it again. No slits or free tabs to snap off.
 //
-// Assembly (as on the fan case, because the USB-C connector sits inside the
-// lid's end wall and nothing rigid can be lowered over it):
-//   1. Lay the lid on the table, ceiling down.
-//   2. Put the carrier in parts side down: slide the USB-C connector into the
-//      port in the lid's end wall, then let the board drop onto the lid's
-//      locating pin (H1). The reset tube and the clamp posts now sit on it.
-//   3. Turn the tray upside down and push it straight down over the lid until
-//      the four wedges click. Its pins go through the other holes.
-//   Opening: pull the tray and lid apart firmly (or flex the skirt pockets in
-//   with a thumbnail through the vent holes).
+// Assembly: drop the carrier onto the tray's pins (its USB-C connector settles
+// into the lower half of the port), then push the lid straight down until the
+// four wedges click. Opening: pull the tray and lid apart firmly.
 //
 // Render (from this folder):
 //   openscad -o tray.stl -D 'part="tray"' device_monitor_case.scad
@@ -55,13 +50,13 @@ pcb_t = 1.6;
 // Case-pin holes: [kicad x, kicad y, role]. All are 2.5 mm NPTH.
 //   "pin"    tray standoff + locating pin only (nothing above: the ESP module covers H5/H6)
 //   "hook"   tray standoff + pin, and a hollow cap (hook post) from the lid clamps the board
-//   "lidpin" the pin hangs from the lid (a post down to the board with a pin through the
-//            hole); the tray boss under it is bored for the pin's tip. It locates the board
-//            in the lid during assembly step 2, and clamps it once closed.
+//   "solid"  where a hollow cap is too thin to print (H1: 3.4 mm between the ESP and J1):
+//            the tray pin stops just below the board's top face and a solid lid post
+//            presses on the board around the hole (as H1 on sump-master-2000).
 holes = [
   [ 3.75,  8.0, "pin"],      // H5  under the ESP32, USB end: takes the USB plug's push
   [ 3.75, 16.0, "pin"],      // H6
-  [24.4,  12.0, "lidpin"],   // H1  between the ESP32 and the ADXL346 header
+  [24.4,  12.0, "solid"],    // H1  between the ESP32 and the ADXL346 header
   [41.5,  17.0, "hook"],     // H2  far end, beside the cap (nothing within 5.6 mm)
 ];
 
@@ -128,10 +123,7 @@ boss_d   = 5;
 hook_od  = 4.5;              // hollow cap over a tray pin
 hook_gap = 0.3;              // cap stops this far above the board
 hook_bore_d = pin_d + 0.6;
-lidpin_od = 3.4;             // H1 post: tight between the ESP's edge (x 22.5) and J1 (x 26.83)
-lidpin_gap = 0.1;            // post's foot to the board
-lidpin_below = 1.0;          // pin reaches this far below the board's underside
-lidpin_bore_d = pin_d + 0.7; // bore in the tray boss under H1
+solid_od = 3.4;              // H1 post: tight between the ESP's edge (x 22.5) and J1 (x 26.83)
 
 // ======================= STRAP SLOT (optional) =======================
 // One zip tie in through a side wall at floor level, across the floor under the
@@ -166,7 +158,7 @@ usb_y  = bxy([0, esp_xy[1]])[1];
 usb_z0 = esp_top - usb_margin;
 usb_z1 = esp_top + usb_h + usb_margin;
 usb_zc = (usb_z0 + usb_z1) / 2;
-stub_h = usb_z0 - 1.2;           // tray's USB-end stub wall: stops below the port (fan case)
+stub_h = usb_zc;                 // tray's USB-end stub wall: up to the port's centre line (sump-master-2000)
 btn_xy = bxy(btn_kicad);
 btn_tube_z0 = esp_top + btn_top_above_esp + btn_gap;
 
@@ -176,7 +168,6 @@ skirt_z0 = pcb_top + 1;
 bump_zc  = skirt_z0 + 1.6;
 skirt_snap_x = [round(in_l * 0.22), round(in_l * 0.78)];
 
-assert(usb_z0 - stub_h >= 1, "stub wall reaches the USB port");
 assert(usb_z1 < in_h - 1, "USB port reaches the ceiling");
 assert(skirt_gap + skirt_t < side_gap + 1.8, "skirts reach over the board's components");
 
@@ -199,6 +190,7 @@ module tray() {
     at_inner() cube([in_l, in_w, in_h + 1]);
     // USB end: a low stub wall below the port; the lid's end wall drops onto it
     translate([-1, -1, floor_t + stub_h]) cube([wall + fit + 1, out_w + 2, 50]);
+    usb_port_cutter(wall + 2);       // lower half of the port
     // divots that the lid skirts' wedges click into
     at_inner() for (x = skirt_snap_x, side = [0, 1]) detent_seat(x, side);
     // strap slot through both long walls, at floor level
@@ -213,14 +205,10 @@ module tray() {
   at_inner() for (h = holes) {
     p = bxy(h);
     translate([p[0], p[1], 0]) {
-      if (h[2] == "lidpin") difference() {
-        cylinder(d = boss_d, h = standoff_h);
-        translate([0, 0, standoff_h - lidpin_below - 0.6]) cylinder(d = lidpin_bore_d, h = 5);
-      } else {
-        cylinder(d = boss_d, h = standoff_h);
-        cylinder(d = pin_d, h = pcb_top + 1.2);
-        translate([0, 0, pcb_top + 1.2]) cylinder(d1 = pin_d, d2 = 1.4, h = 0.6);
-      }
+      pin_top = h[2] == "solid" ? pcb_top - 0.9 : pcb_top + 1.2;   // short pin under a solid post
+      cylinder(d = boss_d, h = standoff_h);
+      cylinder(d = pin_d, h = pin_top);
+      translate([0, 0, pin_top]) cylinder(d1 = pin_d, d2 = 1.4, h = 0.6);
     }
   }
 }
@@ -251,7 +239,9 @@ module detent_seat(x, side) on_side(x, side, seat_w) bump_profile(detent_clr);
 module skirt(side) {
   y0 = side ? in_w - skirt_gap - skirt_t : skirt_gap;
   difference() {
-    translate([1, y0, skirt_z0]) cube([in_l - 1.4, skirt_t, in_h - skirt_z0 + 0.01]);
+    translate([0, y0, skirt_z0]) cube([in_l - 0.4, skirt_t, in_h - skirt_z0 + 0.01]);
+    // joined to the lid's end wall above the tray's stub wall (no gap at the corner)
+    translate([-0.5, y0, stub_h + fit]) cube([0.6, skirt_t, in_h - stub_h - fit + 0.01]);
     for (x = skirt_snap_x)
       translate([x - pad_w / 2, side ? y0 - 1 : y0 + pad_t, skirt_z0 - 1])
         cube([pad_w, skirt_t - pad_t + 1, in_h - skirt_z0 + 1]);
@@ -268,7 +258,7 @@ module lid() {
     union() {
       translate([0, 0, floor_t + in_h]) rbox(out_l, out_w, lid_t, corner_r);
       at_inner() for (side = [0, 1]) skirt(side);
-      // end wall at the USB end: full width, sits on the tray's stub wall, holds the port
+      // end wall at the USB end: full width, sits on the tray's stub wall, holds the port's upper half
       intersection() {
         rbox(out_l, out_w, floor_t + in_h + 0.01, corner_r);
         translate([-1, -1, floor_t + stub_h + fit]) cube([wall + 1, out_w + 2, 100]);
@@ -280,11 +270,8 @@ module lid() {
             cylinder(d = hook_od, h = in_h - pcb_top - hook_gap + 0.01);
             translate([0, 0, -1]) cylinder(d = hook_bore_d, h = 3.5);
           }
-        if (h[2] == "lidpin") translate([p[0], p[1], 0]) {   // post + locating pin
-          translate([0, 0, pcb_top + lidpin_gap]) cylinder(d = lidpin_od, h = in_h - pcb_top - lidpin_gap + 0.01);
-          translate([0, 0, standoff_h - lidpin_below + 0.5]) cylinder(d = pin_d, h = pcb_t + lidpin_below);
-          translate([0, 0, standoff_h - lidpin_below]) cylinder(d1 = 1.4, d2 = pin_d, h = 0.5 + 0.01);
-        }
+        if (h[2] == "solid")     // solid post pressing on the board around the hole
+          translate([p[0], p[1], pcb_top + hook_gap]) cylinder(d = solid_od, h = in_h - pcb_top - hook_gap + 0.01);
       }
       // reset guide tube, from the ceiling to just above the button
       at_inner() translate([btn_xy[0], btn_xy[1], btn_tube_z0])

@@ -49,8 +49,8 @@ lights on HIGH).
 <img src="hw/case/case-closed.png" alt="Printed case" width="400"/>
 
 A two-part printed case (52 x 31 x 23 mm) holds the carrier PCB: tray and lid with no
-screws, pins through the board's holes, and a lid that clicks shut. The USB-C port passes
-through the lid's end wall, and a hole over the RESET button takes a paperclip. Print
+screws, pins through the board's holes, and a lid that clicks shut. The USB-C port is split
+between tray and lid, and a hole over the RESET button takes a paperclip. Print
 `hw/case/tray.stl` and `hw/case/lid.stl` (PLA or PETG, no supports). Printing, assembly,
 mounting and how to change it are in [hw/case/README.md](hw/case/README.md).
 

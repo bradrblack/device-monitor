@@ -19,12 +19,13 @@ It is built from the author's two earlier cases:
   ([fan_dongle_case.scad](https://github.com/bradrblack/rf-ceiling-fan-remote/blob/main/hw/case/fan_dongle_case.scad)):
   no screws. Printed standoffs with pins go through the carrier's holes, and caps
   (hook posts) hang from the lid to clamp the board. A guide tube hangs over the
-  RESET button for a paperclip. The USB-C connector passes through the lid's end
-  wall, and the tray's USB end is only a low stub wall below it. The USB and RESET
-  positions are the same as on that case (same SuperMini footprint and position).
+  RESET button for a paperclip. The USB and RESET positions are the same as on that
+  case (same SuperMini footprint and position).
 - From **Sump Master 2000**
   ([sump_case.scad](https://github.com/bradrblack/sump-master-2000/blob/main/hw/case/sump_case.scad)):
-  the wedge-and-divot closure in place of a friction fit. The lid has two skirts that
+  the USB-C opening split between tray and lid (the tray's stub wall holds the lower
+  half, the lid's end wall the upper half, so the board drops straight in), and the
+  wedge-and-divot closure in place of a friction fit. The lid has two skirts that
   slide down inside the tray's walls. Each skirt is thinned to 1 mm at two pockets, and
   a rounded wedge on each pocket clicks into a divot in the tray wall. Closed,
   nothing is under load (0.1 mm clearance), so the fit doesn't creep loose.
@@ -36,13 +37,12 @@ It is built from the author's two earlier cases:
 | Hole (KiCad x, y) | Tray | Lid |
 |---|---|---|
 | H5 (3.75, 8), H6 (3.75, 16) | standoff + pin | nothing (the ESP module is above them); these take the USB plug's push |
-| H1 (24.4, 12) | standoff, bored for the pin's tip | 3.4 mm post down to the board with a locating pin through the hole |
+| H1 (24.4, 12) | standoff + short pin, stopping inside the hole | solid 3.4 mm post pressing on the board around the hole (too tight between the ESP and J1 for a hollow cap) |
 | H2 (41.5, 17) | standoff + pin | hollow 4.5 mm cap over the pin, 0.3 mm above the board |
 
-The board sits on 3 mm standoffs, so its solder tails clear the floor. The lid's
-H1 pin holds the board in place while you assemble it (below). Once closed, the H1 post
-and H2 cap clamp the board against its standoffs, so the accelerometer is coupled to the
-case.
+The board sits on 3 mm standoffs, so its solder tails clear the floor. Once closed, the
+H1 post and H2 cap hold the board down against its standoffs, so the accelerometer is
+coupled to the case.
 
 ## Printing
 
@@ -56,15 +56,10 @@ case.
 
 ## Assembly
 
-The USB-C connector sits inside the lid's end wall, so the board goes into the lid
-first (as on the fan case):
-
-1. Lay the lid on the table, ceiling down.
-2. Hold the carrier parts side down, tilted slightly, and slide the USB-C connector into
-   the port in the lid's end wall. Then lower the far end so the H1 hole drops over the
-   lid's pin. The board now rests on the H1 post, with the H2 cap just above it.
-3. Turn the tray upside down and push it straight down over the lid until all four
-   wedges click. Its pins go through H5, H6 and H2.
+1. Drop the carrier onto the tray's pins. Its USB-C connector settles into the lower half
+   of the port in the tray's end wall.
+2. Push the lid straight down until all four wedges click. Its end wall closes over the
+   top of the connector.
 
 To open it, pull the tray and lid apart firmly. The 35-degree wedge flanks let go
 without tools.
