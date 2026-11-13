@@ -1435,9 +1435,35 @@ void finishDoubleResetWindow() {
   prefs.end();
 }
 
+// The TX power cap is lost whenever the Wi-Fi driver restarts, and WiFiManager
+// restarts it (mode changes, its own connect attempts, the portal's AP+STA mode)
+// after setupWiFi() has set it. Older SuperMinis then fail to join at full power.
+// So reapply the cap every time the station or the access point starts.
+// Also remember why the last join attempt failed, for the log.
+volatile uint8_t lastDisconnectReason = 0;
+
+void onWiFiEvent(arduino_event_id_t event, arduino_event_info_t info) {
+  switch (event) {
+    case ARDUINO_EVENT_WIFI_STA_START:
+    case ARDUINO_EVENT_WIFI_AP_START:
+      WiFi.setTxPower(WIFI_TX_POWER);
+      break;
+    case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
+      lastDisconnectReason = info.wifi_sta_disconnected.reason;
+      break;
+    default:
+      break;
+  }
+}
+
 void setupWiFi(bool forcePortal) {
   char ap[32];
   apName(ap, sizeof(ap));
+  static bool eventsHooked = false;
+  if (!eventsHooked) {
+    WiFi.onEvent(onWiFiEvent);
+    eventsHooked = true;
+  }
 
   // A clean radio before WiFiManager decides between joining and the portal:
   // without it a phone joining the portal can fail DHCP (seen on the fan remote).
@@ -1479,6 +1505,11 @@ void setupWiFi(bool forcePortal) {
   logf("[WiFi] connecting (or opening the \"%s\" setup portal)", ap);
   bool ok = forcePortal ? wm.startConfigPortal(ap) : wm.autoConnect(ap);
   portalOpen = false;
+  if (lastDisconnectReason) {
+    // 15 = wrong password, 201 = network not found, 2/202/204 = auth or handshake trouble
+    logf("[WiFi] last failed join: reason %u (%s), TX power %d (x0.25 dBm)", lastDisconnectReason,
+         WiFi.disconnectReasonName((wifi_err_reason_t)lastDisconnectReason), (int)WiFi.getTxPower());
+  }
 
   if (portalSaved) {
     String name = lowerTrim(pName.getValue());
