@@ -4,12 +4,15 @@
 
 A two-part printed case (tray + lid) for the device monitor carrier PCB
 (`../devmon_carrier.kicad_pcb`: ESP32-C3 SuperMini, GY-346 / ADXL346 module and one
-bulk capacitor). Outside it is **52.3 x 31 x 23 mm**.
+bulk capacitor). Outside it is **52.3 x 31 x 23 mm**. C1 is optional on the board: without it,
+print the `-nocap` files, which are 6 mm lower (**52.3 x 31 x 17 mm**). The taller case also
+works without the capacitor.
 
 | File | What it is |
 |---|---|
 | `device_monitor_case.scad` | The OpenSCAD source. Everything is a parameter at the top. |
 | `tray.stl`, `lid.stl` | Ready to print. The lid is exported upside down (ceiling on the bed). |
+| `tray-nocap.stl`, `lid-nocap.stl` | The same without C1 (`has_cap = false`). |
 | `check_case.sh` | Renders the clash checks: lid against tray, and each against the board and its parts. Run it after any change. |
 | `case-*.png` | Renders: closed, carrier in the tray, the lid from inside, a section. |
 
@@ -87,6 +90,8 @@ openscad --export-format binstl -o tray.stl -D 'part="tray"' device_monitor_case
 openscad --export-format binstl -o lid.stl  -D 'part="lid"'  device_monitor_case.scad
 ```
 
-The cavity height follows the tallest part. The 12.5 mm capacitor sets it now. A
-shorter capacitor (`cap_h`) makes the whole case shorter. `part="section"` and
+The cavity height follows the tallest part: the 12.5 mm capacitor with `has_cap = true`,
+the USB-C connector without it. A shorter capacitor (`cap_h`) makes the case lower. For the
+no-capacitor files, add `-D has_cap=false` and name them `tray-nocap.stl` / `lid-nocap.stl`.
+`check_case.sh` checks both versions. `part="section"` and
 `part="fit"` are useful previews.

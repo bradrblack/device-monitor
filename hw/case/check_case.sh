@@ -1,13 +1,15 @@
 #!/bin/sh
-# Renders the clash checks in device_monitor_case.scad. Each intersection must have
+# Renders the clash checks in device_monitor_case.scad, with and without the bulk cap. Each intersection must have
 # zero volume (faces that only touch, like the lid resting on the tray walls or the
 # board on its standoffs, are fine). Needs openscad and python3.
 cd "$(dirname "$0")"
 fail=0
 tmp=$(mktemp -d)
+for cap in true false; do
+EXTRA="-D has_cap=$cap"
 for c in clash_lid_tray clash_lid_parts clash_tray_parts; do
-  openscad --export-format asciistl -o "$tmp/$c.stl" -D "part=\"$c\"" device_monitor_case.scad >"$tmp/$c.log" 2>&1
-  if grep -q "top level object is empty" "$tmp/$c.log"; then echo "$c: ok (empty)"; continue; fi
+  openscad --export-format asciistl -o "$tmp/$c.stl" -D "part=\"$c\"" $EXTRA device_monitor_case.scad >"$tmp/$c.log" 2>&1
+  if grep -q "top level object is empty" "$tmp/$c.log"; then echo "has_cap=$cap $c: ok (empty)"; continue; fi
   r=$(python3 - "$tmp/$c.stl" <<'PY'
 import re, sys
 v = [tuple(map(float, m)) for m in re.findall(r'vertex\s+(\S+)\s+(\S+)\s+(\S+)', open(sys.argv[1]).read())]
@@ -19,8 +21,9 @@ else:
     print("CLASH %.3f mm3 at x %.2f..%.2f y %.2f..%.2f z %.2f..%.2f" % (abs(vol), xs[0], xs[-1], ys[0], ys[-1], zs[0], zs[-1]))
 PY
 )
-  echo "$c: $r"
+  echo "has_cap=$cap $c: $r"
   [ "$r" = "ok" ] || fail=1
+done
 done
 rm -rf "$tmp"
 exit $fail

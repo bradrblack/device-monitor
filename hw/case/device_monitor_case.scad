@@ -75,6 +75,9 @@ j1_xy = [28.1, 3.11];        // J1 pin 1, 1x8 down the board (y)
 cap_xy = [41.5, 6.0];        // C1 body centre (CP_Radial_D8.0 P2.5, leads at x 40.25 / 42.75)
 cap_d = 8;                   // envelope: 470 uF/6.3 V is 6.3-8 x 11-12; 100 uF/10 V is 5 x 11
 cap_h = 12.5;
+// C1 is optional on the board. Without it the case can be 6 mm lower:
+// has_cap = false -> tray-nocap.stl / lid-nocap.stl. (The taller case also works without the cap.)
+has_cap = true;
 
 // ======================= ESP32-C3 SuperMini USB-C and RESET =======================
 // Same module position, USB-C overhang and RESET spot as the fan and sump cases.
@@ -148,7 +151,7 @@ pcb_top = standoff_h + pcb_t;
 esp_top = pcb_top + esp_hdr + esp_pcb;                    // module PCB top
 in_w = pcb_w + 2 * side_gap;
 in_l = pcb_x0 + pcb_l + end_gap;
-tallest = max(cap_h, gy_z + 1.6 + gy_parts_h, esp_hdr + esp_pcb + usb_h);
+tallest = max(has_cap ? cap_h : 0, gy_z + 1.6 + gy_parts_h, esp_hdr + esp_pcb + usb_h);
 in_h = ceil(pcb_top + tallest + top_gap);
 out_l = in_l + 2 * wall; out_w = in_w + 2 * wall;
 pcb_y0 = (in_w - pcb_w) / 2;
@@ -336,7 +339,7 @@ module parts_dummies() at_inner() {
   color("purple") kbox([gy_x0, esp_xy[1] - gy_size[1] / 2], [gy_x0 + gy_size[0], esp_xy[1] + gy_size[1] / 2], gy_z, gy_z + 1.6);
   color("gray") kbox([gy_x0 + 3, esp_xy[1] - 3], [gy_x0 + 7, esp_xy[1] + 3], gy_z + 1.6, gy_z + 1.6 + gy_parts_h);
   // bulk cap
-  color("steelblue") translate(concat(bxy(cap_xy), [pcb_top])) cylinder(d = cap_d, h = cap_h);
+  if (has_cap) color("steelblue") translate(concat(bxy(cap_xy), [pcb_top])) cylinder(d = cap_d, h = cap_h);
 }
 // Solder tails under the board (ESP + J1 header pins, cap leads): what the floor and strap must clear.
 module tails_dummies() at_inner() color("gold") {
