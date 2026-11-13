@@ -54,7 +54,7 @@ After that, updates go over Wi-Fi: [Updating firmware](#updating-firmware).
 |---|---|---|
 | ESP32-C3 SuperMini | 1 | The "v2" with an external antenna and an RGB LED on GPIO 8 is the default. An older one with a plain blue LED works too; build `devmon-plain-led` |
 | GY-346 module (ADXL346 accelerometer) | 1 | Goes on the carrier PCB |
-| 100-470 µF electrolytic capacitor | 1 | Across 3V3/GND next to the accelerometer (max 8 x 12.5 mm, 2.5 mm pitch) |
+| 100-470 µF electrolytic capacitor | 1 | Across 3V3/GND next to the accelerometer (max 8 x 12.5 mm, 2.5 mm pitch). Recommended; the board also works without it |
 | Carrier PCB | 1 | [Carrier PCB](#carrier-pcb) |
 | Printed case (tray and lid) | 1 | [Case](#case) |
 | USB-C cable and a 5 V USB power supply | 1 | Any phone charger |
@@ -97,14 +97,19 @@ built around are in **[hw/PCB.md](hw/PCB.md)**. Upload
 
 ## Case
 
-A two-part printed case (tray and lid), about 52 x 31 x 23 mm, in the style of
-the fan remote case: no screws, printed pins through the carrier's holes, posts
-from the lid that clamp the board (so the accelerometer feels the case), a guide
-tube over the **RESET** button, and the USB-C port passing through the lid's end
-wall. The lid clicks on with Sump Master 2000's wedge-and-divot catches. The
-status LED shows through the lid's vent holes (print the lid in a light colour).
+<img src="hw/case/case-closed.png" alt="Printed case" width="400"/>
 
-The OpenSCAD source, STLs, print settings and assembly order are in
+A two-part printed case (tray and lid, 52 x 31 x 23 mm), in the style of the fan
+remote case: no screws, printed pins through the carrier's holes, posts from the
+lid that clamp the board (so the accelerometer feels the case), and a guide tube
+over the **RESET** button for a paperclip. The USB-C opening is split between
+tray and lid, so the board drops straight in, and the lid clicks on with Sump
+Master 2000's wedge-and-divot catches. The same case fits with or without the
+bulk capacitor. The status LED shows through the lid's vent holes (print the lid
+in a light colour).
+
+Print `hw/case/tray.stl` and `hw/case/lid.stl` (PLA or PETG, no supports).
+Printing, assembly and how to change it are in
 **[hw/case/README.md](hw/case/README.md)**.
 
 **Mounting:** the box must move with the machine. Strap or glue it to the motor
