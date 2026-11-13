@@ -44,6 +44,16 @@ GPIO 8/9 are the LED and boot strapping pins on this board, so I2C is moved
 off them. The LED is on GPIO 8 (set `LED_ACTIVE_LOW` in the sketch if yours
 lights on HIGH).
 
+## Case
+
+<img src="hw/case/case-closed.png" alt="Printed case" width="400"/>
+
+A two-part printed case (52 x 31 x 23 mm) holds the carrier PCB: tray and lid with no
+screws, pins through the board's holes, and a lid that clicks shut. The USB-C port passes
+through the lid's end wall, and a hole over the RESET button takes a paperclip. Print
+`hw/case/tray.stl` and `hw/case/lid.stl` (PLA or PETG, no supports). Printing, assembly,
+mounting and how to change it are in [hw/case/README.md](hw/case/README.md).
+
 ## Setup
 
 Copy `src/secrets.h.example` to `src/secrets.h` (git-ignored) and fill in your
