@@ -76,14 +76,10 @@ cap_xy = [41.5, 6.0];        // C1 body centre (CP_Radial_D8.0 P2.5, leads at x 
 cap_d = 8;                   // envelope: 470 uF/6.3 V is 6.3-8 x 11-12; 100 uF/10 V is 5 x 11
 cap_h = 12.5;                // C1 can be left off the board; the case is sized for it either way
 
-// External ribbon antenna (SuperMini v2's u.FL antenna), stuck to the inside of the
-// y = 0 skirt, away from the capacitor. A ledge along the skirt's lower edge locates
-// its bottom edge; the ceiling locates the top. The ledge stops short of the two
-// flexing wedge pockets so it doesn't stiffen them.
+// External ribbon antenna (SuperMini v2's u.FL antenna, about 40 x 11 mm): stuck flat to
+// the inside of the y = 0 skirt, away from the capacitor. Only a stand-in for the clash check.
 antenna = true;
 ant_w = 11; ant_l = 40; ant_t = 0.3;
-ledge_h = 0.8;               // ledge height (z)
-ledge_p = 0.6;               // how far it stands off the skirt's inner face
 
 // ======================= ESP32-C3 SuperMini USB-C and RESET =======================
 // Same module position, USB-C overhang and RESET spot as the fan and sump cases.
@@ -176,7 +172,7 @@ bump_zc  = skirt_z0 + 1.6;
 skirt_snap_x = [round(in_l * 0.22), round(in_l * 0.78)];
 ant_x0 = (in_l - ant_l) / 2;
 ant_z0 = in_h - ant_w - 0.2;          // antenna's lower edge (cavity z), 0.2 under the ceiling
-assert(ant_z0 - ledge_h >= skirt_z0, "antenna too wide for the skirt");
+assert(ant_z0 >= skirt_z0, "antenna too wide for the skirt");
 
 assert(usb_z1 < in_h - 1, "USB port reaches the ceiling");
 assert(skirt_gap + skirt_t < side_gap + 1.8, "skirts reach over the board's components");
@@ -268,13 +264,6 @@ module lid() {
     union() {
       translate([0, 0, floor_t + in_h]) rbox(out_l, out_w, lid_t, corner_r);
       at_inner() for (side = [0, 1]) skirt(side);
-      // antenna ledge on the y = 0 skirt, in segments between the wedge pockets
-      if (antenna) at_inner() {
-        cuts = [for (x = skirt_snap_x) [x - pad_w / 2 - 0.5, x + pad_w / 2 + 0.5]];
-        segs = [[0.5, cuts[0][0]], [cuts[0][1], cuts[1][0]], [cuts[1][1], in_l - 0.9]];
-        for (sg = segs) if (sg[1] > sg[0])
-          translate([sg[0], skirt_gap + skirt_t - 0.01, ant_z0 - ledge_h]) cube([sg[1] - sg[0], ledge_p + 0.01, ledge_h]);
-      }
       // end wall at the USB end: full width, sits on the tray's stub wall, holds the port's upper half
       intersection() {
         rbox(out_l, out_w, floor_t + in_h + 0.01, corner_r);

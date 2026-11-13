@@ -71,12 +71,10 @@ portal; see the main README).
 
 ## Antenna
 
-The SuperMini v2's external ribbon antenna (about 40 x 11 mm) sticks to the inside of the
-lid's skirt on the side away from the capacitor (the side with the label on the tray). A
-small ledge along the skirt's lower edge sets its bottom edge, so it sits square, and the
-ceiling sets its top. Stick it on before closing the case and route the cable to the
-module's u.FL connector. The ledge stops short of the two wedge pockets so they still flex.
-Set `antenna = false` to leave the ledge off.
+The SuperMini v2's external ribbon antenna (about 40 x 11 mm) sticks flat to the inside of
+the lid's skirt on the side away from the capacitor (the side with the label on the tray),
+up against the ceiling. Stick it on before closing the case and route the cable to the
+module's u.FL connector. The clash check includes it there.
 
 ## Mounting
 
