@@ -114,7 +114,10 @@
 #define NVS_NS "devmon"
 
 const char *BANNER =
-R"(     _                                         _ _
+// Starts with an empty line: the first characters printed after a reset can be
+// lost while the USB serial port reconnects, which shifted the top line.
+R"(
+     _                                         _ _
   __| | _____   __  _ __ ___   ___  _ __  (_) |_ ___  _ __
  / _` |/ _ \ \ / / | '_ ` _ \ / _ \| '_ \ | | __/ _ \| '__|
 | (_| |  __/\ V /  | | | | | | (_) | | | || | || (_) | |
@@ -1447,9 +1450,15 @@ void onWiFiEvent(arduino_event_id_t event, arduino_event_info_t info) {
     case ARDUINO_EVENT_WIFI_STA_START:
     case ARDUINO_EVENT_WIFI_AP_START:
       WiFi.setTxPower(WIFI_TX_POWER);
+      Serial.printf("[WiFi] %s started, TX power set to %d (x0.25 dBm)\n",
+                    event == ARDUINO_EVENT_WIFI_AP_START ? "AP" : "station", (int)WiFi.getTxPower());
       break;
     case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
       lastDisconnectReason = info.wifi_sta_disconnected.reason;
+      // Printed straight away (WiFiManager blocks for 30 s while it retries)
+      Serial.printf("[WiFi] join failed: reason %u (%s), RSSI %d\n", lastDisconnectReason,
+                    WiFi.disconnectReasonName((wifi_err_reason_t)lastDisconnectReason),
+                    (int)info.wifi_sta_disconnected.rssi);
       break;
     default:
       break;
