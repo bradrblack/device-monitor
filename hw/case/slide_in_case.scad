@@ -127,8 +127,10 @@ strap = true;               // 4.8 mm zip tie (the slot fits between the front r
 strap_w = 4.8; strap_h = 2;
 strap_slot_w = strap_w + 1; strap_slot_h = strap_h + 0.6;
 
-vent_hole_d = 3;
-label = "DEVICE MONITOR";
+vent_hole_d = 2.6;
+vent_pitch = 4.2;            // along the case
+vent_row = 3.6;              // between rows (staggered by half a pitch)
+vent_margin = 0.8;           // web left round the tab, posts and feet
 
 // ======================= DERIVED =======================
 esp_x0 = front_gap; esp_x1 = esp_x0 + esp_l;
@@ -212,9 +214,6 @@ module tray() {
     at_inner() for (x = snap_x, side = [0, 1]) detent_seat(x, side);
     if (strap) at_inner() translate([strap_x - strap_slot_w / 2, -wall - 1, 0])
       cube([strap_slot_w, out_w + 2, strap_slot_h]);
-    translate([out_l / 2, 0.5, floor_t + (in_h + bump_zc + 2) / 2 - 0.3])
-      rotate([90, 0, 0]) linear_extrude(1)
-        text(label, size = 3, halign = "center", valign = "center", font = "Liberation Sans:style=Bold");
   }
 }
 
@@ -306,13 +305,23 @@ module tab_outline() {
   translate([btn_xy[0], btn_xy[1] - tab_w / 2]) square([tab_len, tab_w]);
 }
 
-// Vent holes in the strip beside the antenna (the LED shows through too), clear
-// of the reset tab, the posts and the feet.
+// Vent holes: a staggered grid over the whole lid (the onboard LED shows through),
+// kept clear of the reset tab, the roots of the posts and feet, and the skirts.
+// The middle rows open onto the antenna, which sticks to the webbing between them.
 module vents() at_inner() {
-  y = (sk_in0 + ant_y0) / 2;
-  for (x = [4 : 5 : in_l - 3])
-    if (x > btn_xy[0] + tab_len + 3 && (x < post_x0 - 2 || x > post_x1 + 2) && x < gy_holes[0][0] - foot_l / 2 - 2)
-      translate([x, y, in_h - 1]) cylinder(d = vent_hole_d, h = lid_t + 2, $fn = 24);
+  m = vent_margin + vent_hole_d / 2;
+  fx0 = gy_holes[0][0] - foot_l / 2; fx1 = gy_holes[0][0] + foot_l / 2;
+  keep_out = [
+    [btn_xy[0] - tab_pad_d / 2 - tab_slot, btn_xy[1] - tab_pad_d / 2 - tab_slot, btn_xy[0] + tab_len + tab_slot, btn_xy[1] + tab_pad_d / 2 + tab_slot],
+    [post_x0, 0, post_x1, esp_y0 + post_over], [post_x0, ant_y1 + 0.3, post_x1, in_w],
+    [fx0, 0, fx1, ant_y0 - 0.2], [fx0, ant_y1 + 0.3, fx1, in_w]];
+  rows = floor((sk_in1 - sk_in0 - 2 * m) / vent_row) + 1;
+  y0 = (in_w - (rows - 1) * vent_row) / 2;
+  for (j = [0 : rows - 1], x = [vent_pitch / 2 * (j % 2) + 2.5 : vent_pitch : in_l - 2.5]) {
+    y = y0 + j * vent_row;
+    hits = [for (r = keep_out) if (x > r[0] - m && x < r[2] + m && y > r[1] - m && y < r[3] + m) 1];
+    if (len(hits) == 0) translate([x, y, in_h - 1]) cylinder(d = vent_hole_d, h = lid_t + 2, $fn = 24);
+  }
 }
 
 // =============== stand-in parts (preview and clash check) ===============

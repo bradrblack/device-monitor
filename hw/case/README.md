@@ -137,6 +137,8 @@ wire each (26-30 AWG).
 - **RESET:** a flex tab is cut into the lid over the button (the keyhole shape), with a
   plunger under its round end. Press the tab to reset; a double press reopens the Wi-Fi
   portal. BOOT has no tab, since flashing over USB doesn't need it.
+- The lid has a staggered grid of 2.6 mm vent holes (the LED shows through), kept
+  clear of the reset tab and the post and foot roots. There is no label on the sides.
 - The lid clicks on with the same skirts, wedges and divots as the PCB case. There is
   also a slot for a 4.8 mm zip tie under the module.
 
@@ -144,8 +146,10 @@ wire each (26-30 AWG).
 
 1. Solder the four wires, then test the module on the bench (first-boot steps in the
    main README).
-2. Hold the SuperMini flat, USB-C forward, in the back half of the tray. Set its front
-   edge on the ledges and slide it forward until the USB-C sits in the end-wall hole.
+2. Lower the SuperMini into the back half of the tray, USB-C forward, and set its front
+   edge on the ledges just behind the lip. Its rear end rests on the module's two
+   locating pins, so it tilts about 2 degrees. Slide it forward: it levels out under the
+   lip, and the USB-C ends up in the end-wall hole.
 3. Drop the GY-346 onto its two pins, components up.
 4. Stick the antenna into the lid's recess, then press the lid down until it clicks.
 
