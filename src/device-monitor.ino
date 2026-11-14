@@ -13,6 +13,7 @@
 
 #include <Wire.h>
 #include <WiFi.h>
+#include <esp_wifi.h>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <Preferences.h>
@@ -1481,9 +1482,38 @@ void setupWiFi(bool forcePortal) {
   WiFi.setTxPower(WIFI_TX_POWER);
   WiFi.setHostname(net.name);
 
-  // Seed the network from secrets.h on a board that has none saved yet.
   WiFiManager wm;
-  if (!wm.getWiFiIsSaved() && WIFI_SSID[0]) {
+  bool haveSaved = wm.getWiFiIsSaved();   // before any secrets.h seeding below
+
+  // A board with a network saved joins it directly, exactly as the original
+  // device-monitor firmware did (station mode, TX power cap, WiFi.begin, modem
+  // sleep left on), without WiFiManager. That firmware ran for weeks on the same
+  // boards and spots where the WiFiManager join kept failing (AUTH_EXPIRE). If the
+  // join fails, the board starts anyway and serviceNetwork() keeps retrying every
+  // 30 s; it never opens the setup portal by itself (double RESET does).
+  if (haveSaved && !forcePortal) {
+    WiFi.setAutoReconnect(true);
+    wifi_config_t saved = {};
+    esp_wifi_get_config(WIFI_IF_STA, &saved);   // WiFi.SSID() is empty until joined
+    logf("[WiFi] joining \"%s\"", (const char *)saved.sta.ssid);
+    WiFi.begin();
+    uint32_t start = millis();
+    while (WiFi.status() != WL_CONNECTED && millis() - start < WIFI_CONNECT_TIMEOUT_S * 1000UL) delay(250);
+    lastWifiAttempt = millis();
+    if (WiFi.status() == WL_CONNECTED) {
+      logf("[WiFi] connected to \"%s\", IP address %s, RSSI %d", WiFi.SSID().c_str(),
+           WiFi.localIP().toString().c_str(), (int)WiFi.RSSI());
+    } else {
+      logf("[WiFi] can't join yet (last reason %u %s); retrying every %lu s (double-press RESET for the setup portal)",
+           lastDisconnectReason, WiFi.disconnectReasonName((wifi_err_reason_t)lastDisconnectReason),
+           (unsigned long)(WIFI_RETRY_MS / 1000));
+    }
+    return;
+  }
+
+  // From here on: a new board (nothing saved) or the portal on demand.
+  // Seed the network from secrets.h on a board that has none saved yet.
+  if (!haveSaved && WIFI_SSID[0]) {
     logf("[WiFi] no saved network; using \"%s\" from secrets.h", WIFI_SSID);
     WiFi.begin(WIFI_SSID, WIFI_PASS);
   }
@@ -1546,11 +1576,10 @@ void setupWiFi(bool forcePortal) {
   }
 
   if (!ok) {
-    // Timed out with nobody configuring it: restart and try the saved network again.
+    // Portal timed out with nobody configuring it: restart and try again.
     restartWithReason("Wi-Fi setup portal timed out");
   }
-  WiFi.setSleep(false);
-  WiFi.setAutoReconnect(true);
+  WiFi.setAutoReconnect(true);   // modem sleep left on, as in the original firmware
   logf("[WiFi] connected to \"%s\", IP address %s", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
 }
 
