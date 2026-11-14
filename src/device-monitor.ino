@@ -13,6 +13,7 @@
 
 #include <Wire.h>
 #include <WiFi.h>
+#include <esp_wifi.h>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <Preferences.h>
