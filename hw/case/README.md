@@ -78,17 +78,14 @@ wire each (26-30 AWG).
 3. Drop the GY-346 onto its two pins, components up.
 4. Stick the antenna into the lid's recess, then press the lid down until it clicks.
 
-### Measure before you print
+### Measurements
 
-Some sizes are still estimates. Change the values at the top of the file, then run `./check_case.sh slide_in_case.scad` (all three checks
-must say ok):
-
-- `esp_t`: the SuperMini's bare PCB thickness. It is assumed to be 1.0 mm.
-- `gy_hole_d` and `gy_hole_in`: the GY-346 hole diameter and the distance from each
-  hole's centre to the module's edge. They are estimated at 3.0 and 2.5 mm from a
-  photo.
-- `btn_from_front` and `btn_from_edge`: the RESET button position, taken from the sm2k
-  measurement.
+The sizes come from measured parts (2026-11-14): SuperMini 22.5 x 18 x 1.0 mm bare
+PCB, GY-346 holes 3.0 mm across, 15 mm apart, centres 2.5 mm from the edge opposite
+the pins. The RESET position (`btn_from_front`, `btn_from_edge`) is the Sump Master 2000
+measurement. Clones vary, so if yours differ, change the values at the top of
+`slide_in_case.scad` and run `./check_case.sh slide_in_case.scad` (all three checks
+must say ok) before re-exporting.
 
 ### Mounting
 
