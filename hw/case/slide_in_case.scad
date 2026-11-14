@@ -14,7 +14,7 @@
 //     come up through its mounting holes, and two lid feet press on the board around
 //     the holes (as the solid H1 post on the PCB case).
 //   - Ribbon antenna (about 40 x 11 mm) stuck flat to the lid's ceiling, in the
-//     strip that the reset tube, the posts and the feet leave clear.
+//     strip that the reset tab, the posts and the feet leave clear.
 //
 // Closure: the same lid as device_monitor_case.scad. Lid skirts slide down inside
 // the tray's long walls, and a wedge on each skirt clicks into a divot in the wall.
@@ -79,7 +79,7 @@ ant_l = 40; ant_w = 11; ant_t = 0.3;
 // ======================= SHELL =======================
 wall = 2; floor_t = 2; lid_t = 2; corner_r = 2;
 fit = 0.2;                   // general FDM clearance
-in_w = 23;                   // cavity width: the module's 21 plus room for the antenna strip
+in_w = 23.6;                 // cavity width: the module's 21 plus room for the antenna strip beside the reset tab
 in_h = 11;                   // cavity height: USB-C top is ~7.4, plus room to bend the wires
 
 // SuperMini support
@@ -102,10 +102,15 @@ rail_w = 1.5;
 gy_gap = 0.3;
 foot_l = 4.5;                // lid feet: square, centred on the module's holes
 
-// Reset tube in the lid
-btn_hole_d = 2.4;
-btn_tube_wall = 0.8;
-btn_gap = 1;
+// Reset tab: a tongue cut into the lid (keyhole outline) with a plunger under its
+// round end. Press the lid there to press RESET.
+tab_pad_d = 3.6;             // round end, over the button
+tab_w = 3;                   // tongue width
+tab_len = 12;                // button centre to the tongue's root (toward the back)
+tab_t = 1.0;                 // tongue thickness (thinned from inside so it flexes)
+tab_slot = 0.6;              // cut around it
+plunger_d = 2.4;
+btn_gap = 0.5;               // plunger tip above the button at rest
 
 // Skirts, wedges and divots (as device_monitor_case.scad / sump-master-2000)
 skirt_t = 1.6; skirt_gap = 0.2;
@@ -143,10 +148,9 @@ lip_x0 = pad_zone; lip_x1 = in_l - esp_l - 0.5;
 usb_y = (esp_y0 + esp_y1) / 2;
 usb_z0 = esp_top - usb_margin; usb_z1 = esp_top + usb_h + usb_margin;
 btn_xy = [esp_x0 + btn_from_front, esp_y0 + btn_from_edge];
-btn_tube_od = btn_hole_d + 2 * btn_tube_wall;
-btn_tube_z0 = esp_top + btn_top + btn_gap;
+plunger_z0 = esp_top + btn_top + btn_gap;
 sk_in0 = skirt_gap + skirt_t; sk_in1 = in_w - skirt_gap - skirt_t;   // skirts' inner faces
-ant_y0 = btn_xy[1] + btn_tube_od / 2 + 0.3; ant_y1 = ant_y0 + ant_w;
+ant_y0 = btn_xy[1] + tab_pad_d / 2 + tab_slot + 0.3; ant_y1 = ant_y0 + ant_w;
 ant_x0 = (in_l - ant_l) / 2;
 snap_x = [6, post_x1 + 5];
 out_l = in_l + 2 * wall; out_w = in_w + 2 * wall;
@@ -154,7 +158,7 @@ out_l = in_l + 2 * wall; out_w = in_w + 2 * wall;
 echo(str("slide-in case outside ", out_l, " x ", out_w, " x ", floor_t + in_h + lid_t,
          " mm; cavity ", in_l, " x ", in_w, " x ", in_h));
 assert(lip_x1 - lip_x0 >= 4, "no room for the lip: the case is too short to slide the board in");
-assert(ant_y1 + 0.3 <= sk_in1, "antenna strip doesn't fit between the reset tube and the skirt");
+assert(ant_y1 + 0.3 <= sk_in1, "antenna strip doesn't fit between the reset tab and the skirt");
 assert(esp_y0 + post_over < ant_y0, "post A would cover the antenna");
 assert(usb_z1 < in_h - 1, "USB opening reaches the ceiling");
 assert(guide_top + 0.5 <= skirt_z0, "skirts reach down onto the side guides");
@@ -266,7 +270,7 @@ module lid() {
       at_inner() {
         for (side = [0, 1]) skirt(side);
         // posts behind the SuperMini's rear corners, down to just above the floor.
-        // Post A is under the clear strip by the reset tube; post B is beside the
+        // Post A is under the clear strip by the reset tab; post B is beside the
         // antenna, so it is rooted on its skirt and steps out under the antenna.
         box([post_x0, skirt_gap, 0.3], [post_x1, esp_y0 + post_over, in_h + 0.01]);
         corbel_block(post_x0, post_x1, esp_y1 - post_over, sk_in1 + skirt_t, 0.3, ant_y1 + 0.3);
@@ -280,23 +284,34 @@ module lid() {
           }
           for (h = gy_holes) translate([h[0], h[1], gy_top - 1]) cylinder(d = gy_hole_d - 0.2, h = 1.6);
         }
-        // reset guide tube
-        translate([btn_xy[0], btn_xy[1], btn_tube_z0]) cylinder(d = btn_tube_od, h = in_h - btn_tube_z0 + 0.01);
       }
     }
-    at_inner() translate([btn_xy[0], btn_xy[1], btn_tube_z0 - 0.5]) cylinder(d = btn_hole_d, h = in_h + lid_t + 1);
+    // reset tab: slot round the tongue, and the tongue thinned from inside
+    at_inner() {
+      translate([0, 0, in_h - 1]) linear_extrude(lid_t + 2) difference() {
+        offset(delta = tab_slot) tab_outline();
+        tab_outline();
+      }
+      translate([0, 0, in_h - 0.01]) linear_extrude(lid_t - tab_t + 0.01) tab_outline();
+    }
     // antenna outline: a 0.2 mm recess in the ceiling to stick it into
     if (antenna) at_inner() box([ant_x0 - 0.3, ant_y0 - 0.1, in_h - 0.01], [ant_x0 + ant_l + 0.3, ant_y1 + 0.1, in_h + 0.2]);
     vents();
   }
+  // plunger under the tab's round end
+  at_inner() translate([btn_xy[0], btn_xy[1], plunger_z0]) cylinder(d = plunger_d, h = in_h + lid_t - tab_t - plunger_z0 + 0.01);
+}
+module tab_outline() {
+  translate(btn_xy) circle(d = tab_pad_d);
+  translate([btn_xy[0], btn_xy[1] - tab_w / 2]) square([tab_len, tab_w]);
 }
 
 // Vent holes in the strip beside the antenna (the LED shows through too), clear
-// of the reset tube, the posts and the feet.
+// of the reset tab, the posts and the feet.
 module vents() at_inner() {
   y = (sk_in0 + ant_y0) / 2;
   for (x = [4 : 5 : in_l - 3])
-    if (abs(x - btn_xy[0]) > 4.5 && (x < post_x0 - 2 || x > post_x1 + 2) && x < gy_holes[0][0] - foot_l / 2 - 2)
+    if (x > btn_xy[0] + tab_len + 3 && (x < post_x0 - 2 || x > post_x1 + 2) && x < gy_holes[0][0] - foot_l / 2 - 2)
       translate([x, y, in_h - 1]) cylinder(d = vent_hole_d, h = lid_t + 2, $fn = 24);
 }
 

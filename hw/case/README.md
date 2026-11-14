@@ -101,11 +101,11 @@ The cavity height follows the tallest part, the 12.5 mm capacitor (`cap_h`). `pa
 ## Slide-in case (no carrier PCB)
 
 `slide_in_case.scad` is a smaller case for building a monitor without the carrier
-board: **46.2 x 27 x 15 mm** outside, against 56 x 31 x 23 for the PCB case. The
+board: **46.2 x 27.6 x 15 mm** outside, against 56 x 31 x 23 for the PCB case. The
 ESP32-C3 SuperMini and the GY-346 are joined by four wires soldered straight to the
 pads, with no headers.
 
-![slide-in fit](slide-fit.png) ![slide-in lid](slide-lid.png)
+![slide-in fit](slide-fit.png) ![slide-in lid](slide-lid.png) ![USB end](slide-usb.png) ![reset tab](slide-top.png)
 
 | Wire | SuperMini pad | GY-346 pad |
 |---|---|---|
@@ -130,7 +130,13 @@ wire each (26-30 AWG).
   around the holes. A firm clamp matters here, because a loose module reads its own
   rattle as vibration.
 - The ribbon antenna sticks to the ceiling in a shallow recess down the lid's centre.
-  The reset tube, the posts and the feet all stay out of that strip.
+  The reset tab, the posts and the feet all stay out of that strip.
+- **USB-C:** the end wall has a stadium-shaped hole 10 x 4 mm. The SuperMini slides
+  forward until its USB-C receptacle sits in the hole, about 1 mm back from the outside
+  face, so a cable plugs straight in.
+- **RESET:** a flex tab is cut into the lid over the button (the keyhole shape), with a
+  plunger under its round end. Press the tab to reset; a double press reopens the Wi-Fi
+  portal. BOOT has no tab, since flashing over USB doesn't need it.
 - The lid clicks on with the same skirts, wedges and divots as the PCB case. There is
   also a slot for a 4.8 mm zip tie under the module.
 
