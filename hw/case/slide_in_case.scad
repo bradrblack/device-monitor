@@ -129,7 +129,7 @@ strap_slot_w = strap_w + 1; strap_slot_h = strap_h + 0.6;
 
 vent_hole_d = 2.6;
 vent_pitch = 4.2;            // along the case
-vent_row = 3.6;              // between rows (staggered by half a pitch)
+vent_row = 3.6;              // between rows
 led_hole_d = 2.0; led_pitch = 3;   // LED row along the RESET-side edge
 vent_margin = 0.8;           // web left round the tab, posts and feet
 
@@ -306,7 +306,7 @@ module tab_outline() {
   translate([btn_xy[0], btn_xy[1] - tab_w / 2]) square([tab_len, tab_w]);
 }
 
-// Vent holes: a staggered grid over the whole lid (the onboard LED shows through),
+// Vent holes: a square grid over the lid (the onboard LED shows through),
 // kept clear of the reset tab, the roots of the posts and feet, and the skirts.
 // The middle rows open onto the antenna, which sticks to the webbing between them.
 module vents() at_inner() {
@@ -315,15 +315,21 @@ module vents() at_inner() {
   fx0 = gy_holes[0][0] - foot_l / 2; fx1 = gy_holes[0][0] + foot_l / 2;
   keep_out = [
     [btn_xy[0] - tab_pad_d / 2 - tab_slot, btn_xy[1] - tab_pad_d / 2 - tab_slot, btn_xy[0] + tab_len + tab_slot, btn_xy[1] + tab_pad_d / 2 + tab_slot],
-    [post_x0, 0, post_x1, esp_y0 + post_over], [post_x0, ant_y1 + 0.3, post_x1, in_w],
-    [fx0, 0, fx1, ant_y0 - 0.2], [fx0, ant_y1 + 0.3, fx1, in_w],
+    // posts and feet, including the corbels that step out under the antenna strip
+    [post_x0, 0, post_x1, esp_y0 + post_over], [post_x0, esp_y1 - post_over, post_x1, in_w],
+    [fx0, 0, fx1, ant_y0 - 0.2], [fx0, gy_holes[1][1] - foot_l / 2, fx1, in_w],
     [esp_x0, led_y - led_hole_d / 2, esp_x1, led_y + led_hole_d / 2]];
   rows = floor((sk_in1 - sk_in0 - 2 * m) / vent_row) + 1;
   y0 = (in_w - (rows - 1) * vent_row) / 2;
-  for (j = [0 : rows - 1], x = [vent_pitch / 2 * (j % 2) + 2.5 : vent_pitch : in_l - 2.5]) {
-    y = y0 + j * vent_row;
-    hits = [for (r = keep_out) if (x > r[0] - m && x < r[2] + m && y > r[1] - m && y < r[3] + m) 1];
-    if (len(hits) == 0) translate([x, y, in_h - 1]) cylinder(d = vent_hole_d, h = lid_t + 2, $fn = 24);
+  // two blocks: over the SuperMini, and over the module between the posts and the
+  // feet. A block's row is drilled only if every hole in it is clear, so the
+  // pattern stays a tidy grid instead of a scatter around the keep-outs.
+  blocks = [[for (x = [2.5 : vent_pitch : esp_x1 - 1]) x],
+            [for (x = [post_x1 + m : vent_pitch : fx0 - m]) x]];
+  for (b = blocks, jr = [0 : rows - 1]) {
+    y = y0 + jr * vent_row;
+    hits = [for (x = b, r = keep_out) if (x > r[0] - m && x < r[2] + m && y > r[1] - m && y < r[3] + m) 1];
+    if (len(hits) == 0) for (x = b) translate([x, y, in_h - 1]) cylinder(d = vent_hole_d, h = lid_t + 2, $fn = 24);
   }
   // LED row: smaller holes along the SuperMini's RESET-side edge, where the LED is,
   // between the skirt and the reset tab.
