@@ -165,17 +165,18 @@ A new board has no Wi-Fi network saved, so it opens a **setup portal**:
 
 The portal also opens:
 
-- **When the saved network can't be joined** for 30 s at boot (router down,
-  password changed). It stays open 5 minutes, then the board restarts and tries
-  the saved network again, so a power cut that outlasts the router just costs a
-  few minutes.
+- **Only on a board with no network saved.** Once a network is saved, the board
+  never opens the portal by itself: if it can't join (router restarting, power cut
+  that outlasts the router), it keeps retrying the saved network every 30 s and
+  rejoins as soon as the router is back. If the portal does open on a new board
+  and nobody uses it, it closes after 5 minutes and the board restarts.
 - **On demand**: press **RESET twice**, about a second apart, through the hole in
   the lid. (The LED flashes white for the first 5 seconds after any reset; a
   second press in that time opens the portal.) Or use **Change Wi-Fi network**
   on the web page.
 
 If you put `WIFI_SSID` / `WIFI_PASS` in `src/secrets.h`, a new board tries that
-network first and only opens the portal if it can't join.
+network first and only opens the portal if it can't join (and nothing is saved yet).
 
 ## Naming the device
 
@@ -459,7 +460,7 @@ Ported from Sump Master 2000: recover on its own where possible, never fail sile
 
 | Mechanism | Behavior |
 |---|---|
-| **Wi-Fi at boot** | Saved network tried for 30 s, then the setup portal for 5 minutes, then a restart to try again. |
+| **Wi-Fi at boot** | Saved network tried for 30 s; if that fails the board starts anyway and keeps retrying every 30 s (no automatic portal once a network is saved; double-press RESET for it). A new board with no network opens the portal for 5 minutes, then restarts. |
 | **Wi-Fi watchdog** | If Wi-Fi drops it resets the radio and retries every 30 s; if it stays down for 2 minutes, it restarts. |
 | **Accelerometer watchdog** | Every 30 s the chip's device ID and measure mode are checked (a dead sensor otherwise reads as zeros, which looks like a machine that's off). Missing at boot or after three failed checks, failing reads, or a perfectly flat signal: detection pauses, a run in progress is closed with `note="sensor_lost"`, one push says so, and it's retried every 30 s with I2C bus recovery (clocking SCL to release a stuck bus). A push says when it's back. The web page and OTA keep working. |
 | **Outputs** | InfluxDB, ntfy and MQTT failures never restart the board: data queues and is retried, and one push reports a long InfluxDB outage. |

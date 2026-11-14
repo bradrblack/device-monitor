@@ -1483,7 +1483,8 @@ void setupWiFi(bool forcePortal) {
 
   // Seed the network from secrets.h on a board that has none saved yet.
   WiFiManager wm;
-  if (!wm.getWiFiIsSaved() && WIFI_SSID[0]) {
+  bool haveSaved = wm.getWiFiIsSaved();   // before any secrets.h seeding below
+  if (!haveSaved && WIFI_SSID[0]) {
     logf("[WiFi] no saved network; using \"%s\" from secrets.h", WIFI_SSID);
     WiFi.begin(WIFI_SSID, WIFI_PASS);
   }
@@ -1504,6 +1505,12 @@ void setupWiFi(bool forcePortal) {
   wm.setMenu(menu);
   wm.setConnectTimeout(WIFI_CONNECT_TIMEOUT_S);
   wm.setConfigPortalTimeout(PORTAL_TIMEOUT_S);
+  // A board that already has a network saved never opens the portal on its own:
+  // after a router restart or a power cut that outlasts the router, it keeps
+  // retrying the saved network instead of sitting in an open setup portal.
+  // The portal is still there on demand (double RESET, or the web page).
+  bool portalAllowed = forcePortal || !haveSaved;
+  if (!portalAllowed) wm.setEnableConfigPortal(false);
   wm.setAPCallback([](WiFiManager *) {
     portalOpen = true;
     ledWrite(LED_PURPLE);
@@ -1545,13 +1552,21 @@ void setupWiFi(bool forcePortal) {
     if (ok && changed) restartWithReason(REASON_USER);
   }
 
-  if (!ok) {
-    // Timed out with nobody configuring it: restart and try the saved network again.
+  if (!ok && portalAllowed) {
+    // Portal timed out with nobody configuring it: restart and try again.
     restartWithReason("Wi-Fi setup portal timed out");
   }
   WiFi.setSleep(false);
   WiFi.setAutoReconnect(true);
-  logf("[WiFi] connected to \"%s\", IP address %s", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
+  if (ok) {
+    logf("[WiFi] connected to \"%s\", IP address %s", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
+  } else {
+    // Carry on without Wi-Fi: serviceNetwork() retries every 30 s and sensing,
+    // the LED and the queues keep working. Double-press RESET for the portal.
+    lastWifiAttempt = millis();
+    logf("[WiFi] can't join the saved network yet; retrying every %lu s (double-press RESET for the setup portal)",
+         (unsigned long)(WIFI_RETRY_MS / 1000));
+  }
 }
 
 void setupTime() {
