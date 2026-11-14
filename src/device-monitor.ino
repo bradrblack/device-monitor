@@ -1481,9 +1481,35 @@ void setupWiFi(bool forcePortal) {
   WiFi.setTxPower(WIFI_TX_POWER);
   WiFi.setHostname(net.name);
 
-  // Seed the network from secrets.h on a board that has none saved yet.
   WiFiManager wm;
   bool haveSaved = wm.getWiFiIsSaved();   // before any secrets.h seeding below
+
+  // A board with a network saved joins it directly, exactly as the original
+  // device-monitor firmware did (station mode, TX power cap, WiFi.begin, modem
+  // sleep left on), without WiFiManager. That firmware ran for weeks on the same
+  // boards and spots where the WiFiManager join kept failing (AUTH_EXPIRE). If the
+  // join fails, the board starts anyway and serviceNetwork() keeps retrying every
+  // 30 s; it never opens the setup portal by itself (double RESET does).
+  if (haveSaved && !forcePortal) {
+    WiFi.setAutoReconnect(true);
+    logf("[WiFi] joining \"%s\"", WiFi.SSID().c_str());
+    WiFi.begin();
+    uint32_t start = millis();
+    while (WiFi.status() != WL_CONNECTED && millis() - start < WIFI_CONNECT_TIMEOUT_S * 1000UL) delay(250);
+    lastWifiAttempt = millis();
+    if (WiFi.status() == WL_CONNECTED) {
+      logf("[WiFi] connected to \"%s\", IP address %s, RSSI %d", WiFi.SSID().c_str(),
+           WiFi.localIP().toString().c_str(), (int)WiFi.RSSI());
+    } else {
+      logf("[WiFi] can't join yet (last reason %u %s); retrying every %lu s (double-press RESET for the setup portal)",
+           lastDisconnectReason, WiFi.disconnectReasonName((wifi_err_reason_t)lastDisconnectReason),
+           (unsigned long)(WIFI_RETRY_MS / 1000));
+    }
+    return;
+  }
+
+  // From here on: a new board (nothing saved) or the portal on demand.
+  // Seed the network from secrets.h on a board that has none saved yet.
   if (!haveSaved && WIFI_SSID[0]) {
     logf("[WiFi] no saved network; using \"%s\" from secrets.h", WIFI_SSID);
     WiFi.begin(WIFI_SSID, WIFI_PASS);
@@ -1505,12 +1531,6 @@ void setupWiFi(bool forcePortal) {
   wm.setMenu(menu);
   wm.setConnectTimeout(WIFI_CONNECT_TIMEOUT_S);
   wm.setConfigPortalTimeout(PORTAL_TIMEOUT_S);
-  // A board that already has a network saved never opens the portal on its own:
-  // after a router restart or a power cut that outlasts the router, it keeps
-  // retrying the saved network instead of sitting in an open setup portal.
-  // The portal is still there on demand (double RESET, or the web page).
-  bool portalAllowed = forcePortal || !haveSaved;
-  if (!portalAllowed) wm.setEnableConfigPortal(false);
   wm.setAPCallback([](WiFiManager *) {
     portalOpen = true;
     ledWrite(LED_PURPLE);
@@ -1552,21 +1572,12 @@ void setupWiFi(bool forcePortal) {
     if (ok && changed) restartWithReason(REASON_USER);
   }
 
-  if (!ok && portalAllowed) {
+  if (!ok) {
     // Portal timed out with nobody configuring it: restart and try again.
     restartWithReason("Wi-Fi setup portal timed out");
   }
-  WiFi.setSleep(false);
-  WiFi.setAutoReconnect(true);
-  if (ok) {
-    logf("[WiFi] connected to \"%s\", IP address %s", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
-  } else {
-    // Carry on without Wi-Fi: serviceNetwork() retries every 30 s and sensing,
-    // the LED and the queues keep working. Double-press RESET for the portal.
-    lastWifiAttempt = millis();
-    logf("[WiFi] can't join the saved network yet; retrying every %lu s (double-press RESET for the setup portal)",
-         (unsigned long)(WIFI_RETRY_MS / 1000));
-  }
+  WiFi.setAutoReconnect(true);   // modem sleep left on, as in the original firmware
+  logf("[WiFi] connected to \"%s\", IP address %s", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
 }
 
 void setupTime() {
