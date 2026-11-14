@@ -106,7 +106,8 @@ foot_l = 4.5;                // lid feet: square, centred on the module's holes
 tab_pad_d = 3.6;             // round end, over the button
 tab_w = 3;                   // tongue width
 tab_len = 12;                // button centre to the tongue's root (toward the back)
-tab_t = 1.0;                 // tongue thickness (thinned from inside so it flexes)
+tab_t = 1.2;                 // tongue thickness (thinned from inside so it flexes): 6 layers at 0.2
+tab_ramp = 2.5;              // the thinning ramps back to full lid thickness over this length at the root
 tab_slot = 0.6;              // cut around it
 plunger_d = 2.4;
 btn_gap = 0.5;               // plunger tip above the button at rest
@@ -285,13 +286,25 @@ module lid() {
         }
       }
     }
-    // reset tab: slot round the tongue, and the tongue thinned from inside
+    // reset tab: a U-shaped slot round the tongue (open at the root, where the
+    // tongue stays joined to the lid), and the tongue thinned from inside, ramping
+    // back to full thickness at the root so the bend isn't at a sharp step
     at_inner() {
+      root_x = btn_xy[0] + tab_len;
       translate([0, 0, in_h - 1]) linear_extrude(lid_t + 2) difference() {
         offset(delta = tab_slot) tab_outline();
         tab_outline();
+        translate([root_x, btn_xy[1] - tab_w / 2 - tab_slot - 1]) square([tab_slot + 1, tab_w + 2 * tab_slot + 2]);
       }
-      translate([0, 0, in_h - 0.01]) linear_extrude(lid_t - tab_t + 0.01) tab_outline();
+      thin = lid_t - tab_t;
+      translate([0, 0, in_h - 0.01]) linear_extrude(thin + 0.01) intersection() {
+        tab_outline();
+        translate([0, -50]) square([root_x - tab_ramp, 100]);
+      }
+      hull() {
+        translate([root_x - tab_ramp - 0.01, btn_xy[1] - tab_w / 2, in_h - 0.01]) cube([0.01, tab_w, thin + 0.01]);
+        translate([root_x - 0.01, btn_xy[1] - tab_w / 2, in_h - 0.01]) cube([0.01, tab_w, 0.01]);
+      }
     }
     // antenna outline: a 0.2 mm recess in the ceiling to stick it into
     if (antenna) at_inner() box([ant_x0 - 0.3, ant_y0 - 0.1, in_h - 0.01], [ant_x0 + ant_l + 0.3, ant_y1 + 0.1, in_h + 0.2]);
