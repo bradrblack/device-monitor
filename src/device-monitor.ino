@@ -114,14 +114,13 @@
 #define NVS_NS "devmon"
 
 const char *BANNER =
-// Starts with an empty line: the first characters printed after a reset can be
-// lost while the USB serial port reconnects, which shifted the top line.
+// figlet "standard" font. Starts on a fresh line after the boot messages.
 R"(
-     _                                         _ _
-  __| | _____   __  _ __ ___   ___  _ __  (_) |_ ___  _ __
- / _` |/ _ \ \ / / | '_ ` _ \ / _ \| '_ \ | | __/ _ \| '__|
-| (_| |  __/\ V /  | | | | | | (_) | | | || | || (_) | |
- \__,_|\___| \_/   |_| |_| |_|\___/|_| |_||_|\__\___/|_|
+     _                                    _ _
+  __| | _____   __  _ __ ___   ___  _ __ (_) |_ ___  _ __
+ / _` |/ _ \ \ / / | '_ ` _ \ / _ \| '_ \| | __/ _ \| '__|
+| (_| |  __/\ V /  | | | | | | (_) | | | | | || (_) | |
+ \__,_|\___| \_/   |_| |_| |_|\___/|_| |_|_|\__\___/|_|
 )";
 
 // ---- Pins (match the carrier PCB in hw/) --------------------------------------
@@ -1809,12 +1808,54 @@ void sendMessagePage(int code, const char *title, const char *text, bool reload 
 
 void sendSettingsError(const char *problem) { sendMessagePage(400, "Not saved", problem); }
 
-// Digest authentication, so the admin password itself never crosses the
-// network: user "admin" and the admin password.
-bool webAuthorized() {
-  if (web.authenticate("admin", net.adminPass)) return true;
-  web.requestAuthentication(DIGEST_AUTH, "Device Monitor");
+// Logging in: GET /login asks for user "admin" and the admin password with HTTP
+// Digest authentication (the password itself never crosses the network), then
+// hands the browser a random session cookie. Saves (POSTs) accept that cookie or
+// a valid Digest header, and never answer with a 401 challenge: Safari doesn't
+// show the password box for a 401 on a form POST and just sits there waiting
+// (Chrome and curl were fine). A POST without a login gets a "Log in first" page.
+// Sessions live in RAM, so a restart logs everyone out.
+const int WEB_SESSIONS = 4;
+char webSessions[WEB_SESSIONS][33];   // 32 hex characters each, "" = free
+int webSessionNext = 0;
+
+bool webSessionValid() {
+  String c = web.header("Cookie");
+  int i = c.indexOf("dm_session=");
+  if (i < 0) return false;
+  String tok = c.substring(i + 11, i + 11 + 32);
+  if (tok.length() != 32) return false;
+  for (int k = 0; k < WEB_SESSIONS; k++)
+    if (webSessions[k][0] && tok.equals(webSessions[k])) return true;
   return false;
+}
+
+bool webAuthorized() {
+  if (webSessionValid() || web.authenticate("admin", net.adminPass)) return true;
+  logf("[web] %s %s from %s refused: not logged in", web.method() == HTTP_POST ? "POST" : "GET", web.uri().c_str(),
+       web.client().remoteIP().toString().c_str());
+  sendMessagePage(403, "Log in first",
+                  "Changing settings needs the admin password. <a href=\"/login\">Log in</a> (user <b>admin</b>), "
+                  "then make the change again.");
+  return false;
+}
+
+void redirectHome(const char *query);
+
+// GET /login: the browser's own password box, then a session cookie.
+void handleWebLogin() {
+  if (!web.authenticate("admin", net.adminPass)) {
+    if (web.hasHeader("Authorization"))
+      logf("[web] login from %s failed (wrong password?)", web.client().remoteIP().toString().c_str());
+    return web.requestAuthentication(DIGEST_AUTH, "Device Monitor", "Wrong password, or the login was cancelled.");
+  }
+  char *slot = webSessions[webSessionNext];
+  webSessionNext = (webSessionNext + 1) % WEB_SESSIONS;
+  for (int k = 0; k < 16; k++) snprintf(slot + 2 * k, 3, "%02x", (unsigned)(esp_random() & 0xff));
+  logf("[web] logged in from %s", web.client().remoteIP().toString().c_str());
+  web.sendHeader("Set-Cookie", String("dm_session=") + slot + "; Path=/; HttpOnly; SameSite=Strict");
+  web.sendHeader("Set-Cookie", "dm_login=1; Path=/; SameSite=Strict");   // for the page's script only
+  redirectHome("login=1");
 }
 
 void redirectHome(const char *query) {
@@ -1941,7 +1982,10 @@ void handleWebConnections() {
   snprintf(c.mqttUser, sizeof(c.mqttUser), "%s", user.c_str());
   if (!user.length()) c.mqttPass[0] = 0;
   else if (pass.length()) snprintf(c.mqttPass, sizeof(c.mqttPass), "%s", pass.c_str());
-  if (admin.length()) snprintf(c.adminPass, sizeof(c.adminPass), "%s", admin.c_str());
+  if (admin.length()) {
+    snprintf(c.adminPass, sizeof(c.adminPass), "%s", admin.c_str());
+    memset(webSessions, 0, sizeof(webSessions));   // a new password logs everyone out
+  }
 
   bool mqttChanged = strcmp(c.mqttHost, net.mqttHost) || c.mqttPort != net.mqttPort || strcmp(c.mqttUser, net.mqttUser) ||
                      strcmp(c.mqttPass, net.mqttPass);
@@ -2002,7 +2046,7 @@ void handleWebUpdateUpload() {
   HTTPUpload &up = web.upload();
   if (up.status == UPLOAD_FILE_START) {
     uploadError = "";
-    uploadAuthorized = web.authenticate("admin", net.adminPass);
+    uploadAuthorized = webSessionValid() || web.authenticate("admin", net.adminPass);
     if (!uploadAuthorized) return;
     logf("[OTA] web upload starting: %s", up.filename.c_str());
     saveHealthBeforeUpdate();
@@ -2023,7 +2067,7 @@ void handleWebUpdateUpload() {
 
 void handleWebUpdateDone() {
   if (!uploadAuthorized) {
-    if (!webAuthorized()) return;  // asks for the password; the browser then re-sends the file
+    if (!webAuthorized()) return;  // "Log in first": log in, then upload the file again
   }
   if (uploadError.length() || !Update.isFinished()) {
     String text = String("The update failed: ") + (uploadError.length() ? uploadError : String("incomplete upload")) +
@@ -2039,7 +2083,10 @@ void handleWebUpdateDone() {
 
 void setupWeb() {
   web.enableDelay(false);  // handleClient() must return at once when nobody is connected
+  const char *headers[] = {"Cookie"};   // Authorization is always collected
+  web.collectHeaders(headers, 1);
   web.on("/", HTTP_GET, []() { web.send_P(200, "text/html; charset=utf-8", WEB_PAGE); });
+  web.on("/login", HTTP_GET, handleWebLogin);
   web.on("/api/status", HTTP_GET, handleWebStatus);
   web.on("/api/log", HTTP_GET, handleWebLog);
   web.on("/settings", HTTP_POST, handleWebSettings);
