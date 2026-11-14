@@ -1,4 +1,4 @@
-<img src="./v-sense.jpg" alt="ESP32 and accelerometer" width="49%"/> <img src="./grafana.png" alt="Grafana dashboard" width="49%"/>
+<img src="./case.png" alt="Slide-in case: closed, and open with the ESP32-C3 and accelerometer inside" width="49%"/> <img src="./grafana.png" alt="Grafana dashboard" width="49%"/>
 
 # Device Monitor
 
@@ -8,7 +8,7 @@ An ESP32-C3 SuperMini reads an ADXL346 (or ADXL345) accelerometer and reports
 every start and stop, with the run length, to whichever of these you use:
 
 - **Web page on the board** (always on): live state, calibration, settings, log.
-- **Home Assistant** over MQTT, found automatically (MQTT Discovery).
+- **Home Assistant** over MQTT, found automatically (MQTT Discovery). Enables device status voice alerts on smart speakers.
 - **ntfy** push notifications to your phone.
 - **InfluxDB** (directly or through Telegraf) with a ready-made **Grafana** dashboard.
 
@@ -79,7 +79,7 @@ it finds; the web page and boot log say which. The two chips are
 register-compatible but **not pin-compatible**, and both cases are shaped for the
 GY-346 module. An ADXL345 breakout (e.g. GY-291 or Adafruit's) still works
 if you wire it by hand to the pins above (VCC to 3V3, CS to 3V3, SDO to GND), as
-on the original bench build in the photo, but it won't fit either case.
+on the original bench build ([photo](v-sense.jpg)), but it won't fit either case.
 
 **I2C reliability:** keep the connections short (and fit the bulk capacitor on the carrier). On the
 Sump Master bench, long jumper wires without a capacitor made the sensor drop out
