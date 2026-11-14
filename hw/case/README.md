@@ -138,7 +138,7 @@ wire each (26-30 AWG).
   plunger under its round end. It sits over RESET as on the carrier: 9 mm from the USB
   end, on the far side when you look down with the USB-C pointing left. Press the tab to reset; a double press reopens the Wi-Fi
   portal. BOOT has no tab, since flashing over USB doesn't need it.
-- The lid has a grid of 2.6 mm vent holes (one block over the SuperMini, one over the module) (the LED shows through), kept
+- The lid has a grid of 2.6 mm vent holes (one block over the SuperMini, one over the module), kept
   clear of the reset tab and the post and foot roots, plus a row of 2 mm holes along
   the SuperMini's RESET-side edge, over its LED. There is no label on the sides.
 - The lid clicks on with the same skirts, wedges and divots as the PCB case. There is
