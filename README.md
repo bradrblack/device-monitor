@@ -183,6 +183,15 @@ The portal also opens:
   second press in that time opens the portal.) Or use **Change Wi-Fi network**
   on the web page.
 
+On a board that already has a network, the on-demand portal never takes it
+offline. The board joins its saved network first and keeps monitoring and
+reporting while the portal is open beside it (the LED stays purple). If nobody
+uses the portal, it closes after 5 minutes and the board carries on as before. The
+board's own web page is unavailable while the portal is open, because both use
+port 80. This matters because the C3 can't tell a RESET press from a power
+cycle, so two power bumps a few seconds apart look like a double press. With
+this design they just open a portal nobody uses.
+
 If you put `WIFI_SSID` / `WIFI_PASS` in `src/secrets.h`, a new board tries that
 network first and only opens the portal if it can't join (and nothing is saved yet).
 
@@ -468,7 +477,7 @@ Ported from Sump Master 2000: recover on its own where possible, never fail sile
 
 | Mechanism | Behavior |
 |---|---|
-| **Wi-Fi at boot** | Saved network tried for 30 s; if that fails the board starts anyway and keeps retrying every 30 s (no automatic portal once a network is saved; double-press RESET for it). A new board with no network opens the portal for 5 minutes, then restarts. |
+| **Wi-Fi at boot** | Saved network tried for 30 s; if that fails the board starts anyway and keeps retrying every 30 s (no automatic portal once a network is saved; double-press RESET for it, and the board stays online while it's open). A new board with no network opens the portal for 5 minutes, then restarts. |
 | **Wi-Fi watchdog** | If Wi-Fi drops it resets the radio and retries every 30 s; if it stays down for 2 minutes, it restarts. |
 | **Accelerometer watchdog** | Every 30 s the chip's device ID and measure mode are checked (a dead sensor otherwise reads as zeros, which looks like a machine that's off). Missing at boot or after three failed checks, failing reads, or a perfectly flat signal: detection pauses, a run in progress is closed with `note="sensor_lost"`, one push says so, and it's retried every 30 s with I2C bus recovery (clocking SCL to release a stuck bus). A push says when it's back. The web page and OTA keep working. |
 | **Outputs** | InfluxDB, ntfy and MQTT failures never restart the board: data queues and is retried, and one push reports a long InfluxDB outage. |

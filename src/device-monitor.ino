@@ -279,7 +279,8 @@ bool     bootCorrectionDone = false;
 bool     otaTrial = false;
 uint8_t  otaRequiredHealth = HEALTH_ACCEL;
 volatile bool otaDone = false;
-bool     portalOpen = false;   // for the LED while the setup portal blocks
+bool     portalOpen = false;   // for the LED while the setup portal is open
+bool     webStarted = false;   // the web page waits while the background portal holds port 80
 uint32_t restartAtMs = 0;      // a restart requested from the web page (0 = none)
 const char *restartReason = REASON_USER;
 
@@ -1407,6 +1408,65 @@ void apName(char *out, size_t len) {
   snprintf(out, len, "DeviceMonitor-%02X%02X", mac[4], mac[5]);
 }
 
+// The portal's two extra fields. Created once, when a portal first opens, so they
+// outlive a portal that runs in the background.
+WiFiManagerParameter *pName = nullptr, *pAdmin = nullptr;
+WiFiManager *bgPortal = nullptr;   // the setup portal running beside normal operation
+void startBackgroundPortal(const char *ap);
+
+void configurePortal(WiFiManager &wm) {
+  if (!pName) {
+    static char adminHint[] = "";
+    pName = new WiFiManagerParameter("devname", "Device name (lowercase letters, digits and -; it becomes &lt;name&gt;.local)",
+                                     net.name, sizeof(net.name) - 1);
+    pAdmin = new WiFiManagerParameter("admin", "New admin password for the web page (8+ characters; empty keeps the current one)",
+                                      adminHint, sizeof(net.adminPass) - 1, "type=\"password\"");
+  }
+  wm.setTitle("Device Monitor");
+  wm.setHostname(net.name);
+  wm.setSaveConfigCallback(onPortalSave);
+  wm.setSaveParamsCallback(onPortalSave);
+  wm.addParameter(pName);
+  wm.addParameter(pAdmin);
+  // No firmware upload from the open portal: updates need the admin password.
+  std::vector<const char *> menu = {"wifi", "info", "sep", "restart", "exit"};
+  wm.setMenu(menu);
+  wm.setConfigPortalTimeout(PORTAL_TIMEOUT_S);
+  wm.setAPCallback([](WiFiManager *) {
+    portalOpen = true;
+    ledWrite(LED_PURPLE);
+    logf("[WiFi] setup portal open: join the Wi-Fi network shown below and browse to http://192.168.4.1/");
+  });
+}
+
+// Applies the name and admin password typed into the portal. Returns true if
+// either changed (the new name only reaches DHCP and mDNS on a fresh start).
+bool applyPortalFields() {
+  if (!portalSaved || !pName) return false;
+  String name = lowerTrim(pName->getValue());
+  String admin = String(pAdmin->getValue());
+  bool changed = false;
+  if (name.length() && name != net.name) {
+    if (validName(name.c_str())) {
+      snprintf(net.name, sizeof(net.name), "%s", name.c_str());
+      changed = true;
+    } else {
+      logf("[WiFi] device name \"%s\" ignored (use a-z, 0-9 and -, up to 24)", name.c_str());
+    }
+  }
+  if (admin.length() >= 8 && admin.length() < sizeof(net.adminPass) && plainText(admin.c_str())) {
+    snprintf(net.adminPass, sizeof(net.adminPass), "%s", admin.c_str());
+    changed = true;
+  } else if (admin.length()) {
+    logf("[WiFi] admin password ignored (8-32 characters, no spaces, quotes or backslash)");
+  }
+  if (changed) {
+    saveNetConfig();
+    logNetConfig("set in the setup portal");
+  }
+  return changed;
+}
+
 // NVS flag "drd" is set at power-up and cleared DOUBLE_RESET_WINDOW_MS later;
 // finding it already set means RESET was pressed again inside the window.
 // NVS rather than RTC memory, because the C3's RESET pin resets everything.
@@ -1491,7 +1551,12 @@ void setupWiFi(bool forcePortal) {
   // boards and spots where the WiFiManager join kept failing (AUTH_EXPIRE). If the
   // join fails, the board starts anyway and serviceNetwork() keeps retrying every
   // 30 s; it never opens the setup portal by itself (double RESET does).
-  if (haveSaved && !forcePortal) {
+  //
+  // A double RESET (or the web page) on such a board joins the same way first and
+  // then opens the portal beside normal operation: the board keeps monitoring
+  // and reporting, and an unused portal just closes. RESET and a power cycle look
+  // the same on the C3, so two quick power bumps must never take the board offline.
+  if (haveSaved) {
     WiFi.setAutoReconnect(true);
     wifi_config_t saved = {};
     esp_wifi_get_config(WIFI_IF_STA, &saved);   // WiFi.SSID() is empty until joined
@@ -1508,6 +1573,7 @@ void setupWiFi(bool forcePortal) {
            lastDisconnectReason, WiFi.disconnectReasonName((wifi_err_reason_t)lastDisconnectReason),
            (unsigned long)(WIFI_RETRY_MS / 1000));
     }
+    if (forcePortal) startBackgroundPortal(ap);
     return;
   }
 
@@ -1518,30 +1584,11 @@ void setupWiFi(bool forcePortal) {
     WiFi.begin(WIFI_SSID, WIFI_PASS);
   }
 
-  char adminHint[] = "";
-  WiFiManagerParameter pName("devname", "Device name (lowercase letters, digits and -; it becomes &lt;name&gt;.local)",
-                             net.name, sizeof(net.name) - 1);
-  WiFiManagerParameter pAdmin("admin", "New admin password for the web page (8+ characters; empty keeps the current one)",
-                              adminHint, sizeof(net.adminPass) - 1, "type=\"password\"");
-  wm.setTitle("Device Monitor");
-  wm.setHostname(net.name);
-  wm.setSaveConfigCallback(onPortalSave);
-  wm.setSaveParamsCallback(onPortalSave);
-  wm.addParameter(&pName);
-  wm.addParameter(&pAdmin);
-  // No firmware upload from the open portal: updates need the admin password.
-  std::vector<const char *> menu = {"wifi", "info", "sep", "restart", "exit"};
-  wm.setMenu(menu);
+  configurePortal(wm);
   wm.setConnectTimeout(WIFI_CONNECT_TIMEOUT_S);
-  wm.setConfigPortalTimeout(PORTAL_TIMEOUT_S);
-  wm.setAPCallback([](WiFiManager *) {
-    portalOpen = true;
-    ledWrite(LED_PURPLE);
-    logf("[WiFi] setup portal open: join the Wi-Fi network shown below and browse to http://192.168.4.1/");
-  });
 
   logf("[WiFi] connecting (or opening the \"%s\" setup portal)", ap);
-  bool ok = forcePortal ? wm.startConfigPortal(ap) : wm.autoConnect(ap);
+  bool ok = wm.autoConnect(ap);   // a new board: join from secrets.h, or the portal
   portalOpen = false;
   if (lastDisconnectReason) {
     // 15 = wrong password, 201 = network not found, 2/202/204 = auth or handshake trouble
@@ -1549,31 +1596,7 @@ void setupWiFi(bool forcePortal) {
          WiFi.disconnectReasonName((wifi_err_reason_t)lastDisconnectReason), (int)WiFi.getTxPower());
   }
 
-  if (portalSaved) {
-    String name = lowerTrim(pName.getValue());
-    String admin = String(pAdmin.getValue());
-    bool changed = false;
-    if (name.length() && name != net.name) {
-      if (validName(name.c_str())) {
-        snprintf(net.name, sizeof(net.name), "%s", name.c_str());
-        changed = true;
-      } else {
-        logf("[WiFi] device name \"%s\" ignored (use a-z, 0-9 and -, up to 24)", name.c_str());
-      }
-    }
-    if (admin.length() >= 8 && admin.length() < sizeof(net.adminPass) && plainText(admin.c_str())) {
-      snprintf(net.adminPass, sizeof(net.adminPass), "%s", admin.c_str());
-      changed = true;
-    } else if (admin.length()) {
-      logf("[WiFi] admin password ignored (8-32 characters, no spaces, quotes or backslash)");
-    }
-    if (changed) {
-      saveNetConfig();
-      logNetConfig("set in the setup portal");
-    }
-    // The new name only reaches DHCP and mDNS on a fresh start.
-    if (ok && changed) restartWithReason(REASON_USER);
-  }
+  if (applyPortalFields() && ok) restartWithReason(REASON_USER);
 
   if (!ok) {
     // Portal timed out with nobody configuring it: restart and try again.
@@ -1601,7 +1624,47 @@ void checkBootEpoch() {
   if (now > 100000) bootEpoch = now - millis() / 1000;
 }
 
+// The setup portal on a board that already has a network (double RESET or the
+// web page). Non-blocking: loop() keeps sampling and reporting while it is open.
+// It holds port 80, so the board's own web page starts when it closes.
+void startBackgroundPortal(const char *ap) {
+  bgPortal = new WiFiManager();
+  configurePortal(*bgPortal);
+  bgPortal->setConfigPortalBlocking(false);
+  // A save blocks while it tries the new network; stay inside the 30 s task watchdog.
+  bgPortal->setConnectTimeout(15);
+  logf("[WiFi] opening the \"%s\" setup portal for %lu s; monitoring carries on",
+       ap, (unsigned long)PORTAL_TIMEOUT_S);
+  bgPortal->startConfigPortal(ap);
+  portalOpen = true;
+}
+
+void serviceBackgroundPortal() {
+  if (!bgPortal) return;
+  esp_task_wdt_reset();
+  if (bgPortal->process()) {
+    // Saved and joined the (possibly new) network: restart cleanly on it.
+    applyPortalFields();
+    logf("[WiFi] new settings saved in the setup portal");
+    restartWithReason(REASON_USER);
+  }
+  if (bgPortal->getConfigPortalActive()) return;
+  // Timed out unused, or closed with Exit.
+  if (applyPortalFields()) restartWithReason(REASON_USER);
+  delete bgPortal;
+  bgPortal = nullptr;
+  portalOpen = false;
+  WiFi.mode(WIFI_STA);
+  WiFi.setTxPower(WIFI_TX_POWER);
+  WiFi.setAutoReconnect(true);
+  lastWifiAttempt = millis() - WIFI_RETRY_MS;   // retry now if not joined
+  wifiDownSince = 0;
+  logf("[WiFi] setup portal closed; back to normal");
+  setupWeb();
+}
+
 void serviceNetwork(uint32_t now) {
+  if (bgPortal) return;   // the portal owns the radio until it closes
   if (WiFi.status() != WL_CONNECTED) {
     if (now - lastWifiAttempt >= WIFI_RETRY_MS) {
       lastWifiAttempt = now;
@@ -1621,6 +1684,10 @@ void serviceNetwork(uint32_t now) {
 }
 
 void checkWiFiWatchdog() {
+  if (bgPortal) {
+    wifiDownSince = 0;
+    return;
+  }
   if (WiFi.status() != WL_CONNECTED) {
     if (wifiDownSince == 0) wifiDownSince = millis();
     else if (millis() - wifiDownSince > WIFI_DOWN_REBOOT_MS) restartWithReason("WiFi down watchdog");
@@ -2051,9 +2118,9 @@ void handleWebWifi() {
   prefs.end();
   char ap[32];
   apName(ap, sizeof(ap));
-  String text = String("The board is restarting into its setup portal. Join the Wi-Fi network <b>") + ap +
-                "</b> from a phone and pick the new network. If nobody does within 5 minutes it goes back to the "
-                "current network.";
+  String text = String("The board is restarting and opening its setup portal. Join the Wi-Fi network <b>") + ap +
+                "</b> from a phone and pick the new network. It stays on the current network meanwhile, and the "
+                "portal closes by itself after 5 minutes if unused. This page comes back once it closes.";
   sendMessagePage(200, "Wi-Fi setup", text.c_str());
   restartAtMs = millis() + 1000;
   restartReason = REASON_USER;
@@ -2111,6 +2178,8 @@ void handleWebUpdateDone() {
 }
 
 void setupWeb() {
+  if (webStarted) return;
+  webStarted = true;
   web.enableDelay(false);  // handleClient() must return at once when nobody is connected
   const char *headers[] = {"Cookie"};   // Authorization is always collected
   web.collectHeaders(headers, 1);
@@ -2133,7 +2202,7 @@ void setupWeb() {
 }
 
 void serviceWeb() {
-  if (WiFi.status() != WL_CONNECTED) return;
+  if (!webStarted || WiFi.status() != WL_CONNECTED) return;
   for (int i = 0; i < 3; i++) web.handleClient();
 }
 
@@ -2181,7 +2250,7 @@ void setup(void) {
   setupTime();
   checkBootEpoch();
   setupOta();
-  setupWeb();
+  if (!bgPortal) setupWeb();   // otherwise when the portal closes
   setupMqtt();
   setupSensor();
   reportBoot();
@@ -2254,6 +2323,7 @@ void loop(void) {
   serviceNetwork(now);
   serviceOta();
   serviceWeb();
+  serviceBackgroundPortal();
   serviceMqtt(now);
   checkWiFiWatchdog();
   checkSensorWatchdog(now);
