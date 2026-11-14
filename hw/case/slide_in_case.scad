@@ -127,8 +127,11 @@ strap = true;               // 4.8 mm zip tie (the slot fits between the front r
 strap_w = 4.8; strap_h = 2;
 strap_slot_w = strap_w + 1; strap_slot_h = strap_h + 0.6;
 
-vent_hole_d = 3;
-label = "DEVICE MONITOR";
+vent_hole_d = 2.6;
+vent_pitch = 4.2;            // along the case
+vent_row = 3.6;              // between rows
+led_hole_d = 2.0; led_pitch = 3;   // LED row along the RESET-side edge
+vent_margin = 0.8;           // web left round the tab, posts and feet
 
 // ======================= DERIVED =======================
 esp_x0 = front_gap; esp_x1 = esp_x0 + esp_l;
@@ -212,9 +215,6 @@ module tray() {
     at_inner() for (x = snap_x, side = [0, 1]) detent_seat(x, side);
     if (strap) at_inner() translate([strap_x - strap_slot_w / 2, -wall - 1, 0])
       cube([strap_slot_w, out_w + 2, strap_slot_h]);
-    translate([out_l / 2, 0.5, floor_t + (in_h + bump_zc + 2) / 2 - 0.3])
-      rotate([90, 0, 0]) linear_extrude(1)
-        text(label, size = 3, halign = "center", valign = "center", font = "Liberation Sans:style=Bold");
   }
 }
 
@@ -306,13 +306,35 @@ module tab_outline() {
   translate([btn_xy[0], btn_xy[1] - tab_w / 2]) square([tab_len, tab_w]);
 }
 
-// Vent holes in the strip beside the antenna (the LED shows through too), clear
-// of the reset tab, the posts and the feet.
+// Vent holes: a square grid over the lid (the onboard LED shows through),
+// kept clear of the reset tab, the roots of the posts and feet, and the skirts.
+// The middle rows open onto the antenna, which sticks to the webbing between them.
 module vents() at_inner() {
-  y = (sk_in0 + ant_y0) / 2;
-  for (x = [4 : 5 : in_l - 3])
-    if (x > btn_xy[0] + tab_len + 3 && (x < post_x0 - 2 || x > post_x1 + 2) && x < gy_holes[0][0] - foot_l / 2 - 2)
-      translate([x, y, in_h - 1]) cylinder(d = vent_hole_d, h = lid_t + 2, $fn = 24);
+  m = vent_margin + vent_hole_d / 2;
+  led_y = sk_in0 + 0.7 + led_hole_d / 2;
+  fx0 = gy_holes[0][0] - foot_l / 2; fx1 = gy_holes[0][0] + foot_l / 2;
+  keep_out = [
+    [btn_xy[0] - tab_pad_d / 2 - tab_slot, btn_xy[1] - tab_pad_d / 2 - tab_slot, btn_xy[0] + tab_len + tab_slot, btn_xy[1] + tab_pad_d / 2 + tab_slot],
+    // posts and feet, including the corbels that step out under the antenna strip
+    [post_x0, 0, post_x1, esp_y0 + post_over], [post_x0, esp_y1 - post_over, post_x1, in_w],
+    [fx0, 0, fx1, ant_y0 - 0.2], [fx0, gy_holes[1][1] - foot_l / 2, fx1, in_w],
+    [esp_x0, led_y - led_hole_d / 2, esp_x1, led_y + led_hole_d / 2]];
+  rows = floor((sk_in1 - sk_in0 - 2 * m) / vent_row) + 1;
+  y0 = (in_w - (rows - 1) * vent_row) / 2;
+  // two blocks: over the SuperMini, and over the module between the posts and the
+  // feet. A block's row is drilled only if every hole in it is clear, so the
+  // pattern stays a tidy grid instead of a scatter around the keep-outs.
+  blocks = [[for (x = [2.5 : vent_pitch : esp_x1 - 1]) x],
+            [for (x = [post_x1 + m : vent_pitch : fx0 - m]) x]];
+  for (b = blocks, jr = [0 : rows - 1]) {
+    y = y0 + jr * vent_row;
+    hits = [for (x = b, r = keep_out) if (x > r[0] - m && x < r[2] + m && y > r[1] - m && y < r[3] + m) 1];
+    if (len(hits) == 0) for (x = b) translate([x, y, in_h - 1]) cylinder(d = vent_hole_d, h = lid_t + 2, $fn = 24);
+  }
+  // LED row: smaller holes along the SuperMini's RESET-side edge, where the LED is,
+  // between the skirt and the reset tab.
+  assert(led_y + led_hole_d / 2 + 0.7 <= btn_xy[1] - tab_pad_d / 2 - tab_slot, "LED row hits the reset tab");
+  for (x = [esp_x0 + 1.5 : led_pitch : esp_x1 - 1]) translate([x, led_y, in_h - 1]) cylinder(d = led_hole_d, h = lid_t + 2, $fn = 20);
 }
 
 // =============== stand-in parts (preview and clash check) ===============
@@ -346,16 +368,24 @@ module tie_dummy() if (strap) color("black") at_inner()
   translate([strap_x - strap_w / 2, -wall - 0.5, 0.2]) cube([strap_w, out_w + 1, strap_h - 0.4]);
 module everything_else() { esp_dummy(); gy_dummy(); wires_dummy(); antenna_dummy(); tie_dummy(); }
 
-if (part == "none") { }
-else if (part == "tray") tray();
-else if (part == "lid") translate([0, out_w, floor_t + in_h + lid_t]) rotate([180, 0, 0]) lid();
-else if (part == "clash_lid_tray") intersection() { tray(); lid(); }
-else if (part == "clash_lid_parts") intersection() { lid(); everything_else(); }
-else if (part == "clash_tray_parts") intersection() { tray(); everything_else(); }
-else if (part == "closed") { color("steelblue") tray(); color("lightgray") lid(); }
-else if (part == "fit") { tray(); everything_else(); }
-else if (part == "section") intersection() {
-  union() { tray(); lid(); everything_else(); }
-  translate([-5, wall + usb_y, -10]) cube([200, 50, 60]);
+// Everything above is laid out with the RESET side at low y. Looking down on the
+// SuperMini (USB-C to the left), RESET is on the far side, as on the carrier
+// (KiCad (9, 8), see device_monitor_case.scad's bxy()), so the output is mirrored
+// across the case's centre line.
+module reset_side_up() translate([0, out_w, 0]) mirror([0, 1, 0]) children();
+
+reset_side_up() {
+  if (part == "none") { }
+  else if (part == "tray") tray();
+  else if (part == "lid") translate([0, out_w, floor_t + in_h + lid_t]) rotate([180, 0, 0]) lid();
+  else if (part == "clash_lid_tray") intersection() { tray(); lid(); }
+  else if (part == "clash_lid_parts") intersection() { lid(); everything_else(); }
+  else if (part == "clash_tray_parts") intersection() { tray(); everything_else(); }
+  else if (part == "closed") { color("steelblue") tray(); color("lightgray") lid(); }
+  else if (part == "fit") { tray(); everything_else(); }
+  else if (part == "section") intersection() {
+    union() { tray(); lid(); everything_else(); }
+    translate([-5, wall + usb_y, -10]) cube([200, 50, 60]);
+  }
+  else { color("steelblue") tray(); color("white", 0.35) lid(); everything_else(); }
 }
-else { color("steelblue") tray(); color("white", 0.35) lid(); everything_else(); }
