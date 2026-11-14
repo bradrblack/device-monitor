@@ -35,8 +35,10 @@ portal and the case style come from the
 
 The whole path from parts to a calibrated unit on your network:
 
-1. **Order and assemble the carrier PCB**: [Carrier PCB](#carrier-pcb).
-2. **Print the case**: [Case](#case).
+1. **Pick a case and print it**: [Case](#case). The slide-in case (recommended)
+   needs only four soldered wires. The PCB case needs the
+   [Carrier PCB](#carrier-pcb) ordered and assembled first.
+2. **Wire or assemble the electronics** for that case.
 3. **Flash the firmware over USB** (once): [Firmware](#firmware).
 4. **Join it to Wi-Fi and name it** with the setup portal from your phone:
    [First boot and Wi-Fi](#first-boot-and-wi-fi).
@@ -53,38 +55,39 @@ After that, updates go over Wi-Fi: [Updating firmware](#updating-firmware).
 | Part | Qty | Notes |
 |---|---|---|
 | ESP32-C3 SuperMini | 1 | The "v2" with an external antenna and an RGB LED on GPIO 8 is the default. An older one with a plain blue LED works too; build `devmon-plain-led` |
-| GY-346 module (ADXL346 accelerometer) | 1 | Goes on the carrier PCB |
-| 100-470 µF electrolytic capacitor | 1 | Across 3V3/GND next to the accelerometer (max 8 x 12.5 mm, 2.5 mm pitch). Recommended; the board also works without it |
-| Carrier PCB | 1 | [Carrier PCB](#carrier-pcb) |
-| Printed case (tray and lid) | 1 | [Case](#case) |
+| GY-346 module (ADXL346 accelerometer) | 1 | |
+| Printed case (tray and lid) | 1 | [Case](#case): slide-in or PCB |
+| Thin wire, 26-30 AWG | 4 x 35 mm | Slide-in case only |
+| Carrier PCB | 1 | PCB case only: [Carrier PCB](#carrier-pcb) |
+| 100-470 µF electrolytic capacitor | 1 | PCB case only, optional: across 3V3/GND next to the accelerometer (max 8 x 12.5 mm, 2.5 mm pitch) |
 | USB-C cable and a 5 V USB power supply | 1 | Any phone charger |
 
-**Pins** (fixed by the carrier PCB):
+**Pins** (the same for both cases):
 
 | Signal | ESP32-C3 | Notes |
 |---|---|---|
 | Accelerometer SDA | GPIO 5 | I2C at 100 kHz |
 | Accelerometer SCL | GPIO 6 | |
 | Status LED | GPIO 8 | the SuperMini's own LED |
-| 3V3 / GND | 3V3 / GND | with the bulk capacitor |
+| 3V3 / GND | 3V3 to VIN, GND to GND | |
 
 GPIO 2, 8 and 9 are boot strapping pins on the C3, so nothing else uses them.
 
 **ADXL345 or ADXL346:** the firmware reads the chip's device ID at boot (0xE5 =
 ADXL345, 0xE6 = ADXL346) at either I2C address (0x53 or 0x1D) and uses whichever
 it finds; the web page and boot log say which. The two chips are
-register-compatible but **not pin-compatible**, so the carrier PCB takes the
-GY-346 module only. An ADXL345 breakout (e.g. GY-291 or Adafruit's) still works
+register-compatible but **not pin-compatible**, and both cases are shaped for the
+GY-346 module. An ADXL345 breakout (e.g. GY-291 or Adafruit's) still works
 if you wire it by hand to the pins above (VCC to 3V3, CS to 3V3, SDO to GND), as
-on the original bench build in the photo.
+on the original bench build in the photo, but it won't fit either case.
 
-**I2C reliability:** keep the bulk capacitor and the short connections. On the
+**I2C reliability:** keep the connections short (and fit the bulk capacitor on the carrier). On the
 Sump Master bench, long jumper wires without a capacitor made the sensor drop out
 and the board sometimes crash in the I2C driver on a cold power-up.
 
 ## Carrier PCB
 
-A 50.5 x 24 mm two-layer carrier holds the SuperMini and the GY-346 module, plus
+Only needed for the PCB case. A 50.5 x 24 mm two-layer carrier holds the SuperMini and the GY-346 module, plus
 the bulk capacitor. It is a cut-down of the Sump Master 2000 carrier (same ESP32
 and accelerometer placement, same I2C wiring). All parts are through-hole. Three
 optional solder jumpers on the back ship open: INT1 to GPIO 4 (not used by this
@@ -97,20 +100,25 @@ built around are in **[hw/PCB.md](hw/PCB.md)**. Upload
 
 ## Case
 
-<img src="hw/case/case-closed.png" alt="Printed case" width="400"/>
+<img src="hw/case/slide-fit.png" alt="Slide-in case with the parts in the tray" width="49%"/> <img src="hw/case/case-closed.png" alt="PCB case, closed" width="49%"/>
 
-A two-part printed case (tray and lid, 56 x 31 x 23 mm), in the style of the fan
-remote case: no screws, printed pins through the carrier's holes, posts from the
-lid that clamp the board (so the accelerometer feels the case), and a guide tube
-over the **RESET** button for a paperclip. The USB-C opening is split between
-tray and lid, so the board drops straight in, and the lid clicks on with Sump
-Master 2000's wedge-and-divot catches. The same case fits with or without the
-bulk capacitor. The status LED shows through the lid's vent holes (print the lid
-in a light colour).
+Two printed cases, both a tray and a lid that click together with no screws and
+clamp the accelerometer firmly so it feels the machine:
 
-Print `hw/case/tray.stl` and `hw/case/lid.stl` (PLA or PETG, no supports).
-Printing, assembly and how to change it are in
-**[hw/case/README.md](hw/case/README.md)**.
+- **Slide-in case (recommended), 46 x 28 x 15 mm.** No PCB. The SuperMini slides
+  into grooves in the walls with its USB-C in the end wall, and the GY-346 sits on
+  rails and two pins. Four wires join them (3V3 to VIN, GND, GPIO 5 to SDA, GPIO 6
+  to SCL). A flex tab in the lid presses RESET, a row of holes shows the LED, and
+  the ribbon antenna sticks to the lid ceiling. Print `hw/case/slide_tray.stl` and
+  `hw/case/slide_lid.stl`.
+- **PCB case, 56 x 31 x 23 mm.** For the [carrier PCB](#carrier-pcb). Printed pins
+  go through the board's holes, lid posts clamp it, and a guide tube over RESET
+  takes a paperclip. It fits with or without the bulk capacitor. Print
+  `hw/case/tray.stl` and `hw/case/lid.stl`.
+
+Print in PLA or PETG with no supports; a light-coloured lid lets the status LED
+show through. Wiring, assembly, the measurements to check before printing and how
+to change either case are in **[hw/case/README.md](hw/case/README.md)**.
 
 **Mounting:** the box must move with the machine. Strap or glue it to the motor
 housing, the pump's discharge pipe or a rigid panel, not to something that damps
@@ -170,8 +178,8 @@ The portal also opens:
   that outlasts the router), it keeps retrying the saved network every 30 s and
   rejoins as soon as the router is back. If the portal does open on a new board
   and nobody uses it, it closes after 5 minutes and the board restarts.
-- **On demand**: press **RESET twice**, about a second apart, through the hole in
-  the lid. (The LED flashes white for the first 5 seconds after any reset; a
+- **On demand**: press **RESET twice**, about a second apart: the flex tab on the
+  slide-in lid, or a paperclip through the PCB case's lid. (The LED flashes white for the first 5 seconds after any reset; a
   second press in that time opens the portal.) Or use **Change Wi-Fi network**
   on the web page.
 

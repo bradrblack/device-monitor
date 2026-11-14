@@ -45,8 +45,7 @@ $fn = 40;
 crush = 0.2;                 // lid feet press this far into the module (0 for the clash check)
 
 // ======================= PARTS (measure yours) =======================
-// ESP32-C3 SuperMini. 22.5 x 18 is Brad's tentative measurement (2026-11-14);
-// esp_t is the bare PCB, ASSUMED 1.0 until measured.
+// ESP32-C3 SuperMini: 22.5 x 18 x 1.0 mm bare PCB (Brad, measured 2026-11-14).
 esp_l = 22.5; esp_w = 18; esp_t = 1.0;
 esp_tails = 1.0;             // solder under the board
 usb_w = 9; usb_h = 3.2;      // USB-C receptacle on top, at the front edge
@@ -67,8 +66,8 @@ pad_zone = 9.5;
 gy_l = 14.5; gy_w = 21; gy_t = 1.6;
 gy_parts_h = 1.2;
 gy_tails = 1.0;
-// Two mounting holes along the edge opposite the pins, 15 mm apart (Brad). Diameter
-// and edge distance are ESTIMATED from a product photo: measure and adjust.
+// Two mounting holes along the edge opposite the pins, 15 mm apart, 3.0 mm across,
+// centres 2.5 mm from that edge (Brad, measured 2026-11-14).
 gy_hole_pitch = 15; gy_hole_d = 3.0; gy_hole_in = 2.5;   // centre to the module's rear edge
 gy_pin_d = 2.4;
 
