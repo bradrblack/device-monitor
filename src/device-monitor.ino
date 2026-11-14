@@ -1492,7 +1492,9 @@ void setupWiFi(bool forcePortal) {
   // 30 s; it never opens the setup portal by itself (double RESET does).
   if (haveSaved && !forcePortal) {
     WiFi.setAutoReconnect(true);
-    logf("[WiFi] joining \"%s\"", WiFi.SSID().c_str());
+    wifi_config_t saved = {};
+    esp_wifi_get_config(WIFI_IF_STA, &saved);   // WiFi.SSID() is empty until joined
+    logf("[WiFi] joining \"%s\"", (const char *)saved.sta.ssid);
     WiFi.begin();
     uint32_t start = millis();
     while (WiFi.status() != WL_CONNECTED && millis() - start < WIFI_CONNECT_TIMEOUT_S * 1000UL) delay(250);
