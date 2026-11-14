@@ -1,12 +1,14 @@
 #!/bin/sh
-# Renders the clash checks in device_monitor_case.scad. Each intersection must have
+# Usage: ./check_case.sh [file.scad]   (default device_monitor_case.scad)
+# Renders the clash checks in the case file. Each intersection must have
 # zero volume (faces that only touch, like the lid resting on the tray walls or the
 # board on its standoffs, are fine). Needs openscad and python3.
 cd "$(dirname "$0")"
+scad=${1:-device_monitor_case.scad}
 fail=0
 tmp=$(mktemp -d)
 for c in clash_lid_tray clash_lid_parts clash_tray_parts; do
-  openscad --export-format asciistl -o "$tmp/$c.stl" -D "part=\"$c\"" device_monitor_case.scad >"$tmp/$c.log" 2>&1
+  openscad --export-format asciistl -o "$tmp/$c.stl" -D "part=\"$c\"" -D crush=0 "$scad" >"$tmp/$c.log" 2>&1
   if grep -q "top level object is empty" "$tmp/$c.log"; then echo "$c: ok (empty)"; continue; fi
   r=$(python3 - "$tmp/$c.stl" <<'PY'
 import re, sys

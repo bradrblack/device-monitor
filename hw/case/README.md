@@ -97,3 +97,68 @@ openscad --export-format binstl -o lid.stl  -D 'part="lid"'  device_monitor_case
 
 The cavity height follows the tallest part, the 12.5 mm capacitor (`cap_h`). `part="section"` and
 `part="fit"` are useful previews.
+
+## Slide-in case (no carrier PCB)
+
+`slide_in_case.scad` is a smaller case for building a monitor without the carrier
+board: **46.2 x 27.6 x 15 mm** outside, against 56 x 31 x 23 for the PCB case. The
+ESP32-C3 SuperMini and the GY-346 are joined by four wires soldered straight to the
+pads, with no headers.
+
+![slide-in fit](slide-fit.png) ![slide-in lid](slide-lid.png) ![USB end](slide-usb.png) ![reset tab](slide-top.png)
+
+| Wire | SuperMini pad | GY-346 pad |
+|---|---|---|
+| power | 3V3 | VIN |
+| ground | GND | GND |
+| SDA | 5 | SDA |
+| SCL | 6 | SCL |
+
+Leave CS and SDO open, as on the carrier with its jumpers open. About 35 mm of thin
+wire each (26-30 AWG).
+
+**How it holds the parts**
+
+- The SuperMini rides on two side ledges under its long edges. A lip over its edges
+  toward the back stops it lifting, and its USB-C sits in a hole in the end wall.
+  The lip stays clear of the front 9.5 mm, where the wires are soldered.
+- Two posts on the lid drop in behind the SuperMini's rear corners. Pushing a cable
+  in pushes the board back into them, and pulling a cable out pulls it forward
+  against the end wall. The wires run back between the posts.
+- The GY-346 sits on two floor rails with its header pads toward the SuperMini. Two
+  pins come up through its mounting holes, and two lid feet press the board down
+  around the holes. A firm clamp matters here, because a loose module reads its own
+  rattle as vibration.
+- The ribbon antenna sticks to the ceiling in a shallow recess down the lid's centre.
+  The reset tab, the posts and the feet all stay out of that strip.
+- **USB-C:** the end wall has a stadium-shaped hole 10 x 4 mm. The SuperMini slides
+  forward until its USB-C receptacle sits in the hole, about 1 mm back from the outside
+  face, so a cable plugs straight in.
+- **RESET:** a flex tab is cut into the lid over the button (the keyhole shape), with a
+  plunger under its round end. Press the tab to reset; a double press reopens the Wi-Fi
+  portal. BOOT has no tab, since flashing over USB doesn't need it.
+- The lid clicks on with the same skirts, wedges and divots as the PCB case. There is
+  also a slot for a 4.8 mm zip tie under the module.
+
+**Assembly**
+
+1. Solder the four wires, then test the module on the bench (first-boot steps in the
+   main README).
+2. Hold the SuperMini flat, USB-C forward, in the back half of the tray. Set its front
+   edge on the ledges and slide it forward until the USB-C sits in the end-wall hole.
+3. Drop the GY-346 onto its two pins, components up.
+4. Stick the antenna into the lid's recess, then press the lid down until it clicks.
+
+**Measure before you print.** Some sizes are still estimates. Change the values at
+the top of the file, then run `./check_case.sh slide_in_case.scad` (all three checks
+must say ok):
+
+- `esp_t`: the SuperMini's bare PCB thickness. It is assumed to be 1.0 mm.
+- `gy_hole_d` and `gy_hole_in`: the GY-346 hole diameter and the distance from each
+  hole's centre to the module's edge. They are estimated at 3.0 and 2.5 mm from a
+  photo.
+- `btn_from_front` and `btn_from_edge`: the RESET button position, taken from the sm2k
+  measurement.
+
+Print the tray and lid as `slide_tray.stl` and `slide_lid.stl`, using the same
+settings as the PCB case.
