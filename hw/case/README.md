@@ -135,7 +135,8 @@ wire each (26-30 AWG).
   forward until its USB-C receptacle sits in the hole, about 1 mm back from the outside
   face, so a cable plugs straight in.
 - **RESET:** a flex tab is cut into the lid over the button (the keyhole shape), with a
-  plunger under its round end. Press the tab to reset; a double press reopens the Wi-Fi
+  plunger under its round end. It sits over RESET as on the carrier: 9 mm from the USB
+  end, on the far side when you look down with the USB-C pointing left. Press the tab to reset; a double press reopens the Wi-Fi
   portal. BOOT has no tab, since flashing over USB doesn't need it.
 - The lid has a staggered grid of 2.6 mm vent holes (the LED shows through), kept
   clear of the reset tab and the post and foot roots, plus a row of 2 mm holes along

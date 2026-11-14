@@ -362,16 +362,24 @@ module tie_dummy() if (strap) color("black") at_inner()
   translate([strap_x - strap_w / 2, -wall - 0.5, 0.2]) cube([strap_w, out_w + 1, strap_h - 0.4]);
 module everything_else() { esp_dummy(); gy_dummy(); wires_dummy(); antenna_dummy(); tie_dummy(); }
 
-if (part == "none") { }
-else if (part == "tray") tray();
-else if (part == "lid") translate([0, out_w, floor_t + in_h + lid_t]) rotate([180, 0, 0]) lid();
-else if (part == "clash_lid_tray") intersection() { tray(); lid(); }
-else if (part == "clash_lid_parts") intersection() { lid(); everything_else(); }
-else if (part == "clash_tray_parts") intersection() { tray(); everything_else(); }
-else if (part == "closed") { color("steelblue") tray(); color("lightgray") lid(); }
-else if (part == "fit") { tray(); everything_else(); }
-else if (part == "section") intersection() {
-  union() { tray(); lid(); everything_else(); }
-  translate([-5, wall + usb_y, -10]) cube([200, 50, 60]);
+// Everything above is laid out with the RESET side at low y. Looking down on the
+// SuperMini (USB-C to the left), RESET is on the far side, as on the carrier
+// (KiCad (9, 8), see device_monitor_case.scad's bxy()), so the output is mirrored
+// across the case's centre line.
+module reset_side_up() translate([0, out_w, 0]) mirror([0, 1, 0]) children();
+
+reset_side_up() {
+  if (part == "none") { }
+  else if (part == "tray") tray();
+  else if (part == "lid") translate([0, out_w, floor_t + in_h + lid_t]) rotate([180, 0, 0]) lid();
+  else if (part == "clash_lid_tray") intersection() { tray(); lid(); }
+  else if (part == "clash_lid_parts") intersection() { lid(); everything_else(); }
+  else if (part == "clash_tray_parts") intersection() { tray(); everything_else(); }
+  else if (part == "closed") { color("steelblue") tray(); color("lightgray") lid(); }
+  else if (part == "fit") { tray(); everything_else(); }
+  else if (part == "section") intersection() {
+    union() { tray(); lid(); everything_else(); }
+    translate([-5, wall + usb_y, -10]) cube([200, 50, 60]);
+  }
+  else { color("steelblue") tray(); color("white", 0.35) lid(); everything_else(); }
 }
-else { color("steelblue") tray(); color("white", 0.35) lid(); everything_else(); }
