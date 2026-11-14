@@ -130,6 +130,7 @@ strap_slot_w = strap_w + 1; strap_slot_h = strap_h + 0.6;
 vent_hole_d = 2.6;
 vent_pitch = 4.2;            // along the case
 vent_row = 3.6;              // between rows (staggered by half a pitch)
+led_hole_d = 2.0; led_pitch = 3;   // LED row along the RESET-side edge
 vent_margin = 0.8;           // web left round the tab, posts and feet
 
 // ======================= DERIVED =======================
@@ -310,11 +311,13 @@ module tab_outline() {
 // The middle rows open onto the antenna, which sticks to the webbing between them.
 module vents() at_inner() {
   m = vent_margin + vent_hole_d / 2;
+  led_y = sk_in0 + 0.7 + led_hole_d / 2;
   fx0 = gy_holes[0][0] - foot_l / 2; fx1 = gy_holes[0][0] + foot_l / 2;
   keep_out = [
     [btn_xy[0] - tab_pad_d / 2 - tab_slot, btn_xy[1] - tab_pad_d / 2 - tab_slot, btn_xy[0] + tab_len + tab_slot, btn_xy[1] + tab_pad_d / 2 + tab_slot],
     [post_x0, 0, post_x1, esp_y0 + post_over], [post_x0, ant_y1 + 0.3, post_x1, in_w],
-    [fx0, 0, fx1, ant_y0 - 0.2], [fx0, ant_y1 + 0.3, fx1, in_w]];
+    [fx0, 0, fx1, ant_y0 - 0.2], [fx0, ant_y1 + 0.3, fx1, in_w],
+    [esp_x0, led_y - led_hole_d / 2, esp_x1, led_y + led_hole_d / 2]];
   rows = floor((sk_in1 - sk_in0 - 2 * m) / vent_row) + 1;
   y0 = (in_w - (rows - 1) * vent_row) / 2;
   for (j = [0 : rows - 1], x = [vent_pitch / 2 * (j % 2) + 2.5 : vent_pitch : in_l - 2.5]) {
@@ -322,6 +325,10 @@ module vents() at_inner() {
     hits = [for (r = keep_out) if (x > r[0] - m && x < r[2] + m && y > r[1] - m && y < r[3] + m) 1];
     if (len(hits) == 0) translate([x, y, in_h - 1]) cylinder(d = vent_hole_d, h = lid_t + 2, $fn = 24);
   }
+  // LED row: smaller holes along the SuperMini's RESET-side edge, where the LED is,
+  // between the skirt and the reset tab.
+  assert(led_y + led_hole_d / 2 + 0.7 <= btn_xy[1] - tab_pad_d / 2 - tab_slot, "LED row hits the reset tab");
+  for (x = [esp_x0 + 1.5 : led_pitch : esp_x1 - 1]) translate([x, led_y, in_h - 1]) cylinder(d = led_hole_d, h = lid_t + 2, $fn = 20);
 }
 
 // =============== stand-in parts (preview and clash check) ===============
