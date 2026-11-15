@@ -66,8 +66,8 @@ n.appendChild(document.createTextNode('Saved network: '));
 var k=document.createElement('strong');k.textContent=cur;n.appendChild(k);
 n.appendChild(document.createTextNode('. To keep it (to change only the device name, say), leave the network and password blank.'));
 s.form.insertBefore(n,s.form.firstChild);
-s.placeholder='blank keeps '+cur;
-p.placeholder='blank keeps the saved password';
+s.placeholder=cur+' (saved)';
+p.placeholder='saved - type to replace';
 s.form.addEventListener('submit',function(){if(s.value.trim()==cur&&!p.value)s.value='';});
 }else{s.required=true;s.placeholder='pick a network above';p.placeholder='blank for an open network';}
 }
