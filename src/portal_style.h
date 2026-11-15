@@ -41,7 +41,7 @@ input[type=checkbox]{display:inline-block;width:18px;height:18px;margin:12px 8px
 input[type=checkbox]+label{display:inline;margin:0;font-weight:500}
 .msg,body.invert .msg{margin:16px 0 8px;padding:12px 14px;font-size:14px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-left:4px solid var(--dim);border-radius:10px}
 .msg.S{border-left-color:var(--ok)}.msg.D{border-left-color:var(--bad)}.msg.P{border-left-color:var(--acc)}
-.note{margin:0 0 4px;padding:10px 12px;font-size:14px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:10px}
+.note{margin:18px 0 4px;padding:10px 12px;font-size:14px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:10px}
 input::placeholder{color:var(--dim);opacity:.7;font-style:italic}
 .net{display:flex;align-items:center;gap:8px;padding:13px 4px;border-bottom:1px solid var(--line);cursor:pointer}
 .net:first-of-type{border-top:1px solid var(--line)}
