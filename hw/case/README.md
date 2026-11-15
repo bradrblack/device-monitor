@@ -49,9 +49,14 @@ wire each (26-30 AWG).
   in pushes the board back into them, and pulling a cable out pulls it forward
   against the end wall. The wires run back between the posts.
 - The GY-346 sits on two floor rails with its header pads toward the SuperMini. Two
-  pins come up through its mounting holes, and two lid feet press the board down
-  around the holes. A firm clamp matters here, because a loose module reads its own
-  rattle as vibration.
+  pins come up through its mounting holes, and two small lid feet press the board
+  down around the holes. A firm clamp matters here, because a loose module reads its
+  own rattle as vibration. The feet stay on the bare board between each hole and the
+  module's edges, clear of the regulator, the 0805 parts and the big cap; the
+  module's parts are in the clash check (`gy_parts` in the scad, measured from a
+  photo of the board).
+
+<img src="slide-feet.png" alt="Lid feet over the GY-346, before and after" width="840"/>
 - The ribbon antenna sticks to the ceiling in a shallow recess down the lid's centre.
   The reset tab, the posts and the feet all stay out of that strip.
 - **USB-C:** the end wall has a stadium-shaped hole 10 x 4 mm. The SuperMini slides

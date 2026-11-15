@@ -11,8 +11,8 @@
 //     forward against the end wall. The wires run back between the posts.
 //   - GY-346, its pin row facing the SuperMini, on two floor rails (one just behind
 //     the pin row's solder tails, one under its rear edge). Two pins on the rear rail
-//     come up through its mounting holes, and two lid feet press on the board around
-//     the holes (as the solid H1 post on the PCB case).
+//     come up through its mounting holes, and two small lid feet press on the
+//     board round the holes, clear of its parts (as the solid H1 post on the PCB case).
 //   - Ribbon antenna (about 40 x 11 mm) stuck flat to the lid's ceiling, in the
 //     strip that the reset tab, the posts and the feet leave clear.
 //
@@ -34,7 +34,8 @@
 //   openscad -o slide_tray.stl -D 'part="tray"' slide_in_case.scad
 //   openscad -o slide_lid.stl  -D 'part="lid"'  slide_in_case.scad    (flipped, ceiling on the bed)
 //   part="both" (default) is a preview with stand-in parts, "fit" the tray with the
-//   parts, "section" a cut through the SuperMini's centre line. The "clash_*" parts
+//   parts, "section" a cut through the SuperMini's centre line, "feet" the lid's
+//   feet over the GY-346 and its parts. The "clash_*" parts
 //   must have zero volume: run ./check_case.sh slide_in_case.scad after any change.
 //
 // Coordinates: x along the case from the USB end, y across, z up from the tray
@@ -64,12 +65,22 @@ pad_zone = 9.5;
 
 // GY-346 module: 20.5-21 x 14-14.5 mm (Brad), so the pocket is sized 21 x 14.5. Pin row along a 21 mm edge, 1.27 in.
 gy_l = 14.5; gy_w = 21; gy_t = 1.6;
-gy_parts_h = 1.2;
 gy_tails = 1.0;
 // Two mounting holes along the edge opposite the pins, 15 mm apart, 3.0 mm across,
 // centres 2.5 mm from that edge (Brad, measured 2026-11-14).
 gy_hole_pitch = 15; gy_hole_d = 3.0; gy_hole_in = 2.5;   // centre to the module's rear edge
 gy_pin_d = 2.4;
+// Parts on top of the module, as boxes measured from Brad's photo (scaled by the
+// 15 mm hole pitch, so good to about 0.3 mm). Photo view: pin row at the bottom,
+// holes at the top. [dx0, dx1, dy0, dy1, height]: dx to the right of the left hole's
+// centre, dy down from it toward the pins. They are in the clash check, so a lid
+// foot that lands on one fails it.
+gy_parts = [
+  [-2.3, 0.4, 2.3, 6.0, 1.6],    // regulator (with its leads), below the left hole
+  [3.2, 4.2, 0.3, 2.7, 1.3],     // 0805 right of the left hole
+  [5.3, 9.6, 0.2, 1.8, 1.6],     // the big cap, top centre
+  [10.7, 11.8, 0.3, 2.7, 1.3],   // 0805 left of the right hole
+  [1.2, 12.9, 3.0, 6.0, 1.3]];   // row of 0603s and the ADXL chip
 
 // External ribbon antenna for the SuperMini's u.FL (optional).
 antenna = true;
@@ -99,7 +110,16 @@ post_gap = 0.3;              // board's rear edge to the posts
 rail_h = 2.6;                // module underside above the floor (zip-tie slot runs under it)
 rail_w = 1.5;
 gy_gap = 0.3;
-foot_l = 4.5;                // lid feet: square, centred on the module's holes
+// Lid feet: one pad round each mounting hole, on the clear board between the hole
+// and the module's rear and side edges. On Brad's GY-346 (pins at the bottom, holes
+// at the top) the nearest parts, from the hole centres, are: the regulator below
+// the left hole from 2.3 mm down, a 0805 part 3.2 mm right of the left hole and
+// one 3.2 mm left of the right hole, and the big cap from 5.3 mm right of the left
+// hole. So a foot reaches 2.25 mm either side of its hole and only 1.5 mm
+// toward the pin row (just past the hole's own edge).
+foot_w = 4.5;                // across the module, centred on the hole
+foot_fwd = 1.5;              // from the hole centre toward the pin row
+foot_back = 2.25;            // from the hole centre toward the rear edge (stops 0.25 short of it)
 
 // Reset tab: a tongue cut into the lid (keyhole outline) with a plunger under its
 // round end. Press the lid there to press RESET.
@@ -253,11 +273,13 @@ module skirt(side) {
 // A block hanging from the ceiling between x0..x1, reaching y_lo..y_hi at z_bot,
 // but rooted only at y >= root_y (or <= root_y if flip): a 45 deg corbel steps it
 // out under the antenna strip.
-module corbel_block(x0, x1, y_lo, y_hi, z_bot, root_y) {
+// root_hi (default y_hi) lets the root run on past y_hi, out to the skirt.
+module corbel_block(x0, x1, y_lo, y_hi, z_bot, root_y, root_hi = undef) {
+  rh = is_undef(root_hi) ? y_hi : root_hi;
   step = max(0, root_y - y_lo);
   assert(in_h - 0.6 - step > z_bot + 0.5, "corbel too deep for the cavity");
   hull() {
-    box([x0, root_y, in_h - 0.6], [x1, y_hi, in_h + 0.01]);
+    box([x0, root_y, in_h - 0.6], [x1, rh, in_h + 0.01]);
     box([x0, y_lo, z_bot], [x1, y_hi, in_h - 0.6 - step]);
   }
 }
@@ -278,9 +300,11 @@ module lid() {
         // over the holes; a bore clears the pin tip
         difference() {
           union() {
-            fx0 = gy_holes[0][0] - foot_l / 2; fx1 = gy_holes[0][0] + foot_l / 2;
-            box([fx0, max(sk_in0 + 0.3, gy_holes[0][1] - foot_l / 2), gy_top - crush], [fx1, ant_y0 - 0.2, in_h + 0.01]);
-            corbel_block(fx0, fx1, gy_holes[1][1] - foot_l / 2, sk_in1 + skirt_t, gy_top - crush, ant_y1 + 0.3);
+            fx0 = gy_holes[0][0] - foot_fwd; fx1 = gy_holes[0][0] + foot_back;
+            box([fx0, max(sk_in0 + 0.3, gy_holes[0][1] - foot_w / 2), gy_top - crush], [fx1, gy_holes[0][1] + foot_w / 2, in_h + 0.01]);
+            // the other foot is beside the antenna strip: rooted on its skirt, it
+            // steps out under the antenna and narrows to the pad near the board
+            corbel_block(fx0, fx1, gy_holes[1][1] - foot_w / 2, gy_holes[1][1] + foot_w / 2, gy_top - crush, ant_y1 + 0.3, sk_in1 + skirt_t);
           }
           for (h = gy_holes) translate([h[0], h[1], gy_top - 1]) cylinder(d = gy_hole_d - 0.2, h = 1.6);
         }
@@ -324,12 +348,12 @@ module tab_outline() {
 module vents() at_inner() {
   m = vent_margin + vent_hole_d / 2;
   led_y = sk_in0 + 0.7 + led_hole_d / 2;
-  fx0 = gy_holes[0][0] - foot_l / 2; fx1 = gy_holes[0][0] + foot_l / 2;
+  fx0 = gy_holes[0][0] - foot_fwd; fx1 = gy_holes[0][0] + foot_back;
   keep_out = [
     [btn_xy[0] - tab_pad_d / 2 - tab_slot, btn_xy[1] - tab_pad_d / 2 - tab_slot, btn_xy[0] + tab_len + tab_slot, btn_xy[1] + tab_pad_d / 2 + tab_slot],
     // posts and feet, including the corbels that step out under the antenna strip
     [post_x0, 0, post_x1, esp_y0 + post_over], [post_x0, esp_y1 - post_over, post_x1, in_w],
-    [fx0, 0, fx1, ant_y0 - 0.2], [fx0, gy_holes[1][1] - foot_l / 2, fx1, in_w],
+    [fx0, 0, fx1, gy_holes[0][1] + foot_w / 2], [fx0, gy_holes[1][1] - foot_w / 2, fx1, in_w],
     [esp_x0, led_y - led_hole_d / 2, esp_x1, led_y + led_hole_d / 2]];
   rows = floor((sk_in1 - sk_in0 - 2 * m) / vent_row) + 1;
   y0 = (in_w - (rows - 1) * vent_row) / 2;
@@ -365,7 +389,11 @@ module gy_dummy() at_inner() {
     box([gy_x0, gy_y0, rail_h], [gy_x1, gy_y1, gy_top]);
     for (h = gy_holes) translate([h[0], h[1], rail_h - 1]) cylinder(d = gy_hole_d, h = gy_t + 2);
   }
-  color("gray") box([gy_x0 + 3, in_w / 2 - 3, gy_top], [gy_x0 + 7, in_w / 2 + 3, gy_top + gy_parts_h]);
+  // its parts, from gy_parts below
+  color("gray") for (p = gy_parts) {
+    h = gy_holes[0];
+    box([h[0] - p[3], h[1] + p[0], gy_top], [h[0] - p[2], h[1] + p[1], gy_top + p[4]]);
+  }
   color("gold") box([gy_x0 + 0.77, gy_y0 + 1, rail_h - gy_tails], [gy_x0 + 1.77, gy_y1 - 1, rail_h]);
 }
 // The four wires: up from the pads, back over the board between the posts, down to the pins.
@@ -395,6 +423,10 @@ reset_side_up() {
   else if (part == "clash_tray_parts") intersection() { tray(); everything_else(); }
   else if (part == "closed") { color("steelblue") tray(); color("lightgray") lid(); }
   else if (part == "fit") { tray(); everything_else(); }
+  else if (part == "feet") {   // the module from above, with the bottom 2 mm of the lid's feet over it
+    gy_dummy();
+    color("orangered", 0.8) intersection() { lid(); at_inner() box([gy_x0 + 0.5, -1, gy_top - 1], [in_l + 1, in_w + 1, gy_top + 2]); }
+  }
   else if (part == "section") intersection() {
     union() { tray(); lid(); everything_else(); }
     translate([-5, wall + usb_y, -10]) cube([200, 50, 60]);
