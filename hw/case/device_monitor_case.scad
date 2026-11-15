@@ -17,15 +17,14 @@
 //     antenna stuck flat under the lid.
 // The carrier is the sump-master-2000 carrier cut down to the ESP32-C3 SuperMini
 // and the GY-346 (ADXL346) module. By default the optional bulk capacitor C1 is
-// not fitted: the case is low (17 mm), and a lid post stands where C1 would be.
-// Set cap_fitted = true for a board with C1: the case grows to 23 mm and the lid
-// keeps only one cable post (tray_cap.stl / lid_cap.stl).
+// not fitted and the case is low (17 mm). Set cap_fitted = true for a board with
+// C1: the case grows to 23 mm (tray_cap.stl / lid_cap.stl).
 //
 // Antenna and cable: the antenna sticks under the lid beside the reset tab. Its
-// cable (about 120 mm) is wound once round the two fat posts at the far end of the
-// lid (the cleat), which leaves about 50 mm free to reach the SuperMini's u.FL
-// connector, enough to lay the open lid beside the tray. With cap_fitted there is
-// one post: wind the cable three times round it instead.
+// cable (about 120 mm) is wound three times round the fat post at the far end of
+// the lid (H2's cap), which leaves about 50 mm free to reach the SuperMini's u.FL
+// connector, enough to lay the open lid beside the tray. One post, not the slide-in
+// case's two, so that C1's footprint stays clear (Brad, 2026-11-15).
 //
 // Closure: closing, each wedge rides down the tray wall with its 1 mm pocket
 // flexed 0.4 mm and drops into its divot; closed, nothing is under load (0.1 mm
@@ -33,7 +32,7 @@
 // open it again. No slits or free tabs to snap off.
 //
 // Assembly: stick the antenna into its outline under the lid and wind its cable
-// once round the two posts. Drop the carrier onto the tray's pins (its USB-C
+// three times round the post. Drop the carrier onto the tray's pins (its USB-C
 // connector settles into the lower half of the port), plug the cable into the
 // SuperMini, then push the lid straight down until the four wedges click.
 // Opening: pull the tray and lid apart firmly.
@@ -53,7 +52,7 @@
 
 part = "both";
 $fn = 40;
-cap_fitted = false;          // true: C1 is on the board (taller case, one cable post)
+cap_fitted = false;          // true: C1 is on the board (taller case)
 
 // ======================= CARRIER (from the KiCad board) =======================
 // Keep these in step with hw/devmon_carrier.kicad_pcb (hw/tools/gen_carrier.py).
@@ -72,14 +71,11 @@ holes = [
   [ 3.75,  8.0, "pin"],      // H5  under the ESP32, USB end: takes the USB plug's push
   [ 3.75, 16.0, "pin"],      // H6
   [24.4,  12.0, "short"],    // H1  between the ESP32 and the ADXL346 header
-  [45.3,  17.5, "hook"],     // H2  far end (GY-346 edge x 40.83): its cap is one of the two cable posts
+  [45.3,  17.5, "hook"],     // H2  far end (GY-346 edge x 40.83): its cap is the cable post
 ];
 // Solid lid post: on the bare strip between the ESP (edge x 22.5) and J1 (x 26.83),
 // toward the RESET side so it is clear of the antenna.
 press_kicad = [24.4, 6.0];
-// Second cable post, opposite H2 across the board. It stands on C1's footprint, so
-// it is left out when cap_fitted.
-post2_kicad = [45.3, 6.5];
 cap_xy = [45.3, 6.0];        // C1 body centre (CP_Radial_D8.0 P2.5, leads at x 44.05 / 46.55)
 cap_d = 8;                   // envelope: 470 uF/6.3 V is 6.3-8 x 11-12; 100 uF/10 V is 5 x 11
 cap_h = 12.5;
@@ -102,7 +98,7 @@ j1_xy = [28.1, 3.11];        // J1 pin 1, 1x8 down the board (y)
 // skirt on the far side from RESET. A 0.2 mm outline in the ceiling marks its spot.
 antenna = true;
 ant_w = 11; ant_l = 40; ant_t = 0.3;
-ant_x0 = 0.4;                // from the USB end, so it stops short of the cable posts
+ant_x0 = 0.4;                // from the USB end, so it stops short of the cable post
 
 // ======================= ESP32-C3 SuperMini USB-C and RESET =======================
 // Same module position, USB-C overhang and RESET spot as the fan and sump cases.
@@ -161,8 +157,8 @@ hook_od  = 4.5;              // hollow cap over a tray pin
 hook_gap = 0.3;              // cap stops this far above the board
 hook_bore_d = pin_d + 0.6;
 solid_od = 3.4;              // press post: tight between the ESP's edge (x 22.5) and J1 (x 26.83)
-// Cable posts (the cleat): H2's cap and a twin, fat so the coax bends gently round
-// them (about 4 mm radius), with a flared foot so the turns can't slip off.
+// Cable post: H2's cap, fat so the coax bends gently round it (about 4 mm radius),
+// with a flared foot so the turns can't slip off.
 cleat_d = 7;
 cleat_flare = 0.8;
 
@@ -219,11 +215,11 @@ sv_z = in_h - sv_drop;
 sk_in0 = skirt_gap + skirt_t; sk_in1 = in_w - skirt_gap - skirt_t;   // skirts' inner faces
 ant_y0 = sk_in0 + 0.3; ant_y1 = ant_y0 + ant_w;
 press_xy = bxy(press_kicad);
-cleat_xy = [for (h = holes) if (h[2] == "hook") bxy(h), if (!cap_fitted) bxy(post2_kicad)];
-cable_turns = cap_fitted ? 3 : 1;     // laps of cable round the post(s)
+cleat_xy = [for (h = holes) if (h[2] == "hook") bxy(h)];
+cable_turns = 3;                      // turns of cable round the post
 sv_x = [for (i = [0 : sv_n - 1]) in_l / 2 + (i - (sv_n - 1) / 2) * vent_pitch];
 assert(ant_y1 + 0.3 <= btn_xy[1] - tab_pad_d / 2 - tab_slot - tab_chamfer, "antenna strip reaches the reset tab");
-assert(ant_x0 + ant_l + 0.5 <= cleat_xy[0][0] - cleat_d / 2 - cleat_flare, "antenna reaches the cable posts");
+assert(ant_x0 + ant_l + 0.5 <= cleat_xy[0][0] - cleat_d / 2 - cleat_flare, "antenna reaches the cable post");
 assert(sv_x[0] - vent_hole_d / 2 > skirt_snap_x[0] + pad_w / 2 && sv_x[sv_n - 1] + vent_hole_d / 2 < skirt_snap_x[1] - pad_w / 2, "side vents reach a snap pocket");
 
 assert(usb_z1 < in_h - 1, "USB port reaches the ceiling");
@@ -339,9 +335,8 @@ module lid() {
         translate([-1, -1, floor_t + stub_h + fit]) cube([wall + 1, out_w + 2, 100]);
       }
       at_inner() {
-        // cable posts: H2's cap (over the tray pin) and its twin
+        // cable post: H2's cap (over the tray pin)
         for (h = holes) if (h[2] == "hook") cleat_post(bxy(h), hook_bore_d);
-        if (!cap_fitted) cleat_post(bxy(post2_kicad));
         // solid post pressing on the board between the ESP and J1
         translate([press_xy[0], press_xy[1], pcb_top + hook_gap]) cylinder(d = solid_od, h = in_h - pcb_top - hook_gap + 0.01);
       }
@@ -391,7 +386,7 @@ module tab_outline() {
 // Vent holes: a square grid over the lid (airflow, and the onboard LED shows
 // through), kept clear of the reset tab, the posts and the skirts. Two blocks:
 // over the SuperMini, and over the module between the press post and the cable
-// posts. A block's row is drilled only if every hole in it is clear, so the pattern
+// post. A block's row is drilled only if every hole in it is clear, so the pattern
 // stays a tidy grid instead of a scatter around the keep-outs.
 module vents() at_inner() {
   m = vent_margin + vent_hole_d / 2;
@@ -457,7 +452,7 @@ module tie_dummy() if (strap) color("black")
 
 module antenna_dummy() if (antenna) color("orange") at_inner()
   translate([ant_x0, ant_y0, in_h + 0.2 - ant_t]) cube([ant_l, ant_w, ant_t]);
-// The cable where it is wound round the post(s): cable_turns laps, stacked under the ceiling.
+// The cable where it is wound round the post: cable_turns turns, stacked under the ceiling.
 module cable_dummy() if (antenna) color("black") at_inner() translate([0, 0, in_h - 1 - 1.2 * cable_turns]) linear_extrude(1.2 * cable_turns) difference() {
   hull() for (c = cleat_xy) translate(c) circle(d = cleat_d + 2.6);
   hull() for (c = cleat_xy) translate(c) circle(d = cleat_d + 0.2);

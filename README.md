@@ -115,7 +115,7 @@ clamp the accelerometer firmly so it feels the machine:
   the optional capacitor (`tray_cap.stl` and `lid_cap.stl` are a 23 mm version for a
   board with it). Printed pins go through the board's holes and lid posts
   clamp it. The lid is the same design as the slide-in case's: reset tab, vent
-  holes, antenna and cable posts. Print
+  holes and antenna, with one post for the cable. Print
   `hw/case/tray.stl` and `hw/case/lid.stl`.
 
 Print in PLA or PETG with no supports; a light-coloured lid lets the status LED
