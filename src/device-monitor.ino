@@ -201,6 +201,7 @@ const char *NTP_SERVER = "pool.ntp.org";
 #define REASON_DAILY_REBOOT "Daily scheduled reboot"
 #define REASON_OTA_UPDATE   "OTA update"
 #define REASON_USER         "Restarted from the web page"
+#define REASON_PORTAL       "Settings saved in the setup portal"
 
 // If the board was restarted while the last recorded event was a "start",
 // correct it once the device has been observed for this long and is idle.
@@ -665,7 +666,7 @@ String readRebootReason() {
 }
 
 bool expectedReason(const String &r) {
-  return r == REASON_DAILY_REBOOT || r == REASON_OTA_UPDATE || r == REASON_USER;
+  return r == REASON_DAILY_REBOOT || r == REASON_OTA_UPDATE || r == REASON_USER || r == REASON_PORTAL;
 }
 
 void recordRebootReason(const char *reason) {
@@ -1441,6 +1442,9 @@ void applySettings(const Settings &c, bool useDefaults) {
 // from a phone, pick the Wi-Fi network and set the device name.
 bool portalSaved = false;
 void onPortalSave() { portalSaved = true; }
+// Set when Save is pressed with the network fields left empty: only the device
+// name or admin password changed, so there is nothing to join.
+bool portalSettingsOnly = false;
 
 void apName(char *out, size_t len) {
   uint8_t mac[6];
@@ -1469,6 +1473,10 @@ void configurePortal(WiFiManager &wm) {
   wm.setHostname(net.name);
   wm.setSaveConfigCallback(onPortalSave);
   wm.setSaveParamsCallback(onPortalSave);
+  WiFiManager *w = &wm;
+  wm.setPreSaveConfigCallback([w]() {
+    portalSettingsOnly = w->server->arg("s").isEmpty() && w->server->arg("p").isEmpty();
+  });
   wm.addParameter(pName);
   wm.addParameter(pAdmin);
   // No firmware upload from the open portal: updates need the admin password.
@@ -1707,7 +1715,7 @@ void setupWiFi(bool forcePortal) {
          WiFi.disconnectReasonName((wifi_err_reason_t)lastDisconnectReason), (int)WiFi.getTxPower());
   }
 
-  if (applyPortalFields() && ok) restartWithReason(REASON_USER);
+  if (applyPortalFields() && ok) restartWithReason(REASON_PORTAL);
 
   if (!ok) {
     // Portal timed out with nobody configuring it: restart and try again.
@@ -1759,11 +1767,18 @@ void serviceBackgroundPortal() {
     noteJoined();
     applyPortalFields();
     logf("[WiFi] new settings saved in the setup portal");
-    restartWithReason(REASON_USER);
+    restartWithReason(REASON_PORTAL);
+  }
+  if (portalSettingsOnly) {
+    // Saved without a network (WiFiManager then leaves its portal open): the
+    // board keeps its network, so close the portal now rather than in 5 minutes.
+    portalSettingsOnly = false;
+    logf("[WiFi] settings saved in the setup portal (same network); closing it");
+    bgPortal->stopConfigPortal();
   }
   if (bgPortal->getConfigPortalActive()) return;
-  // Timed out unused, or closed with Exit.
-  if (applyPortalFields()) restartWithReason(REASON_USER);
+  // Timed out unused, saved without a network, or closed with Exit.
+  if (applyPortalFields()) restartWithReason(REASON_PORTAL);
   delete bgPortal;
   bgPortal = nullptr;
   portalOpen = false;

@@ -18,6 +18,10 @@ before 2026-11-13r1).
   and dark to match the web page. Autocorrect, auto-capitalisation, spell check
   and autofill are off on every field (the password box lost them when
   "Show Password" was ticked).
+- **Saving in the portal** now says what happens next (the board joins and the
+  setup Wi-Fi disappears, or it stays up if the join failed). Saving only the name
+  or admin password closes the portal at once instead of after its 5-minute
+  timeout. A board with no network saved requires one before Save.
 - **Clearer LED**: cyan while joining Wi-Fi, cyan blinking over the state colour
   while Wi-Fi is down, purple blinking over the state colour while the portal is
   open, double blink for the portal on a plain LED. The fast blink patterns now

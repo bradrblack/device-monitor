@@ -4,8 +4,10 @@
 //
 // The script turns off autocorrect, auto-capitalisation, spell check and
 // autofill on every text field (WiFiManager's password box loses them when
-// "Show Password" turns it into a text box), and makes each row of the network
-// list tappable across its whole width.
+// "Show Password" turns it into a text box), makes each row of the network
+// list tappable across its whole width, requires a network name on a board that
+// has none saved, and replaces WiFiManager's terse "Saved" pages with what
+// happens next.
 #pragma once
 
 const char PORTAL_HEAD[] = R"PORTAL(<style>
@@ -51,6 +53,18 @@ if(/^(checkbox|radio|file|hidden)$/.test(i.type))return;
 i.setAttribute('autocapitalize','none');i.setAttribute('autocorrect','off');
 i.setAttribute('spellcheck','false');i.setAttribute('autocomplete','off');
 });
+var s=document.getElementById('s');
+if(s&&!s.placeholder)s.required=true;
+var t=document.title,m=document.querySelector('.msg'),b=document.querySelector("form[action='/']");
+if(m&&/^Credentials saved/.test(t)){
+m.className='msg P';
+m.innerHTML='<strong>Saved. The board is joining the network now.</strong><br>If it connects, it restarts and this setup Wi-Fi disappears in about 20 seconds. Close this window and rejoin your usual network.<br><br>If this setup Wi-Fi is still there after a minute, the join failed: reconnect to it and check the network and password.';
+if(b)b.style.display='none';
+}else if(m&&/^(Settings|Setup) saved/.test(t)){
+m.className='msg S';
+m.innerHTML='<strong>Saved.</strong><br>The setup portal is closing and the board carries on with its current network (it restarts first if you changed its name or password). You can close this window.';
+if(b)b.style.display='none';
+}
 all('.wrap>div').forEach(function(d){
 var a=d.querySelector('a[onclick]');if(!a)return;
 d.className+=' net';d.onclick=function(e){if(e.target!==a)a.click()};
