@@ -16,13 +16,16 @@
 //     with a plunger under it, a grid of chamfered vent holes, and the ribbon
 //     antenna stuck flat under the lid.
 // The carrier is the sump-master-2000 carrier cut down to the ESP32-C3 SuperMini
-// and the GY-346 (ADXL346) module. The optional bulk capacitor C1 is NOT fitted:
-// the case is low (17 mm), and a lid post stands where C1 would be.
+// and the GY-346 (ADXL346) module. By default the optional bulk capacitor C1 is
+// not fitted: the case is low (17 mm), and a lid post stands where C1 would be.
+// Set cap_fitted = true for a board with C1: the case grows to 23 mm and the lid
+// keeps only one cable post (tray_cap.stl / lid_cap.stl).
 //
 // Antenna and cable: the antenna sticks under the lid beside the reset tab. Its
 // cable (about 120 mm) is wound once round the two fat posts at the far end of the
 // lid (the cleat), which leaves about 50 mm free to reach the SuperMini's u.FL
-// connector, enough to lay the open lid beside the tray.
+// connector, enough to lay the open lid beside the tray. With cap_fitted there is
+// one post: wind the cable three times round it instead.
 //
 // Closure: closing, each wedge rides down the tray wall with its 1 mm pocket
 // flexed 0.4 mm and drops into its divot; closed, nothing is under load (0.1 mm
@@ -50,6 +53,7 @@
 
 part = "both";
 $fn = 40;
+cap_fitted = false;          // true: C1 is on the board (taller case, one cable post)
 
 // ======================= CARRIER (from the KiCad board) =======================
 // Keep these in step with hw/devmon_carrier.kicad_pcb (hw/tools/gen_carrier.py).
@@ -74,8 +78,11 @@ holes = [
 // toward the RESET side so it is clear of the antenna.
 press_kicad = [24.4, 6.0];
 // Second cable post, opposite H2 across the board. It stands on C1's footprint, so
-// C1 must not be fitted.
+// it is left out when cap_fitted.
 post2_kicad = [45.3, 6.5];
+cap_xy = [45.3, 6.0];        // C1 body centre (CP_Radial_D8.0 P2.5, leads at x 44.05 / 46.55)
+cap_d = 8;                   // envelope: 470 uF/6.3 V is 6.3-8 x 11-12; 100 uF/10 V is 5 x 11
+cap_h = 12.5;
 
 // Parts, for the clash check and the preview (KiCad coordinates, heights above the
 // board's top face). Keep in step with the PCB.
@@ -118,7 +125,7 @@ tab_ramp = 2.5;              // the thinning ramps back to full lid thickness ov
 tab_slot = 0.6;              // cut around it
 tab_chamfer = 0.5;           // the cut widens to tab_slot + 2 x this at the lid's top face, so the
                              // first layers (squashed on the bed: the lid prints top down) don't close it
-plunger_d = 2.4;
+plunger_d = cap_fitted ? 3.2 : 2.4;   // stouter in the tall case, where it is 9 mm long
 btn_gap = 0.5;               // plunger tip above the button at rest
 
 // ======================= SHELL =======================
@@ -189,7 +196,7 @@ pcb_top = standoff_h + pcb_t;
 esp_top = pcb_top + esp_hdr + esp_pcb;                    // module PCB top
 in_w = pcb_w + 2 * side_gap;
 in_l = pcb_x0 + pcb_l + end_gap;
-tallest = max(gy_z + 1.6 + gy_parts_h, esp_hdr + esp_pcb + usb_h);
+tallest = max(cap_fitted ? cap_h : 0, gy_z + 1.6 + gy_parts_h, esp_hdr + esp_pcb + usb_h);
 in_h = ceil(pcb_top + tallest + top_gap);
 out_l = in_l + 2 * wall; out_w = in_w + 2 * wall;
 pcb_y0 = (in_w - pcb_w) / 2;
@@ -212,7 +219,8 @@ sv_z = in_h - sv_drop;
 sk_in0 = skirt_gap + skirt_t; sk_in1 = in_w - skirt_gap - skirt_t;   // skirts' inner faces
 ant_y0 = sk_in0 + 0.3; ant_y1 = ant_y0 + ant_w;
 press_xy = bxy(press_kicad);
-cleat_xy = [for (h = holes) if (h[2] == "hook") bxy(h), bxy(post2_kicad)];
+cleat_xy = [for (h = holes) if (h[2] == "hook") bxy(h), if (!cap_fitted) bxy(post2_kicad)];
+cable_turns = cap_fitted ? 3 : 1;     // laps of cable round the post(s)
 sv_x = [for (i = [0 : sv_n - 1]) in_l / 2 + (i - (sv_n - 1) / 2) * vent_pitch];
 assert(ant_y1 + 0.3 <= btn_xy[1] - tab_pad_d / 2 - tab_slot - tab_chamfer, "antenna strip reaches the reset tab");
 assert(ant_x0 + ant_l + 0.5 <= cleat_xy[0][0] - cleat_d / 2 - cleat_flare, "antenna reaches the cable posts");
@@ -333,7 +341,7 @@ module lid() {
       at_inner() {
         // cable posts: H2's cap (over the tray pin) and its twin
         for (h = holes) if (h[2] == "hook") cleat_post(bxy(h), hook_bore_d);
-        cleat_post(bxy(post2_kicad));
+        if (!cap_fitted) cleat_post(bxy(post2_kicad));
         // solid post pressing on the board between the ESP and J1
         translate([press_xy[0], press_xy[1], pcb_top + hook_gap]) cylinder(d = solid_od, h = in_h - pcb_top - hook_gap + 0.01);
       }
@@ -434,6 +442,7 @@ module parts_dummies() at_inner() {
   // GY-346 on its header
   color("black") kbox([j1_xy[0] - 1.27, j1_xy[1] - 1.27], [j1_xy[0] + 1.27, j1_xy[1] + 7 * 2.54 + 1.27], 0, gy_z);
   color("purple") kbox([gy_x0, esp_xy[1] - gy_size[1] / 2], [gy_x0 + gy_size[0], esp_xy[1] + gy_size[1] / 2], gy_z, gy_z + 1.6);
+  if (cap_fitted) color("steelblue") translate(concat(bxy(cap_xy), [pcb_top])) cylinder(d = cap_d, h = cap_h);
   // its parts: anywhere on the module except the strip over its header
   color("gray") kbox([gy_x0 + 2.6, esp_xy[1] - gy_size[1] / 2 + 0.5], [gy_x0 + gy_size[0] - 0.5, esp_xy[1] + gy_size[1] / 2 - 0.5], gy_z + 1.6, gy_z + 1.6 + gy_parts_h);
 }
@@ -441,14 +450,15 @@ module parts_dummies() at_inner() {
 module tails_dummies() at_inner() color("gold") {
   for (ky = [esp_xy[1] - 7.62, esp_xy[1] + 7.62]) kbox([esp_xy[0] - 10.16, ky - 0.5], [esp_xy[0] + 10.16, ky + 0.5], -pcb_t - 1.5, -pcb_t);
   kbox([j1_xy[0] - 0.5, j1_xy[1] - 0.5], [j1_xy[0] + 0.5, j1_xy[1] + 7 * 2.54 + 0.5], -pcb_t - 1.5, -pcb_t);
+  if (cap_fitted) for (dx = [-1.25, 1.25]) kbox([cap_xy[0] + dx - 0.5, cap_xy[1] - 0.5], [cap_xy[0] + dx + 0.5, cap_xy[1] + 0.5], -pcb_t - 1.5, -pcb_t);
 }
 module tie_dummy() if (strap) color("black")
   translate([wall + bxy([strap_kicad_x, 0])[0] - strap_w / 2, -0.5, floor_t + 0.2]) cube([strap_w, out_w + 1, strap_h - 0.4]);
 
 module antenna_dummy() if (antenna) color("orange") at_inner()
   translate([ant_x0, ant_y0, in_h + 0.2 - ant_t]) cube([ant_l, ant_w, ant_t]);
-// The cable where it is wound round the posts: one lap, just under the ceiling.
-module cable_dummy() if (antenna) color("black") at_inner() translate([0, 0, in_h - 2.2]) linear_extrude(1.2) difference() {
+// The cable where it is wound round the post(s): cable_turns laps, stacked under the ceiling.
+module cable_dummy() if (antenna) color("black") at_inner() translate([0, 0, in_h - 1 - 1.2 * cable_turns]) linear_extrude(1.2 * cable_turns) difference() {
   hull() for (c = cleat_xy) translate(c) circle(d = cleat_d + 2.6);
   hull() for (c = cleat_xy) translate(c) circle(d = cleat_d + 0.2);
 }

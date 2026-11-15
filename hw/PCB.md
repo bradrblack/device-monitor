@@ -62,8 +62,8 @@ the board and press **B** before you plot it yourself.
 
 - The status LED is the SuperMini's own LED on GPIO 8. Nothing on the carrier
   touches GPIO 2, 8 or 9 (the strapping pins).
-- **C1 is optional, and it does not fit the printed PCB case** (the case is 17 mm
-  tall and a lid post stands on C1's footprint). It is a 100-470 uF electrolytic across 3V3/GND right next to
+- **C1 is optional.** The standard printed PCB case (17 mm tall) has no room for it;
+  a board with C1 needs the taller `tray_cap.stl` / `lid_cap.stl`. It is a 100-470 uF electrolytic across 3V3/GND right next to
   the accelerometer. The original device-monitor ran without one. On the sm2k bench,
   though, bulk caps at the sensors were what made the I2C bus reliable, so fit one if
   the accelerometer ever drops out.

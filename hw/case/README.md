@@ -139,8 +139,16 @@ openscad --export-format binstl -o slide_lid.stl  -D 'part="lid"'  slide_in_case
 
 A two-part printed case (tray + lid) for the device monitor carrier PCB
 (`../devmon_carrier.kicad_pcb`: ESP32-C3 SuperMini and GY-346 / ADXL346 module).
-Outside it is **55.8 x 31 x 17 mm**. **The optional capacitor C1 does not fit this
-case:** it is too tall for the low lid, and a lid post stands on its footprint.
+Outside it is **55.8 x 31 x 17 mm**. The optional capacitor C1 does not fit this
+low case: it is too tall for the lid, and a lid post stands on its footprint.
+
+**With the capacitor:** print `tray_cap.stl` and `lid_cap.stl` instead (or set
+`cap_fitted = true` in the scad). That case is **23 mm tall**, and its lid has one
+cable post, H2's cap, because the second post would stand on C1. Wind the cable
+three times round the single post instead of once round the pair; that takes up
+about the same length. Everything else is the same.
+
+<img src="case-cap.png" alt="PCB case for a board with C1: closed, board in the tray, lid from inside" width="840"/>
 
 | File | What it is |
 |---|---|
@@ -231,6 +239,7 @@ The board numbers (`pcb_l`, `holes`, part positions and heights) are copied from
 
 ```
 ./check_case.sh                    # each line must say ok
+CASE_DEFS="-D cap_fitted=true" ./check_case.sh    # the same for the capacitor version
 openscad --export-format binstl -o tray.stl -D 'part="tray"' device_monitor_case.scad
 openscad --export-format binstl -o lid.stl  -D 'part="lid"'  device_monitor_case.scad
 ```
