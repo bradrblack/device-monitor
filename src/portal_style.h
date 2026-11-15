@@ -64,7 +64,7 @@ if(cur){
 var n=document.createElement('div');n.className='note';
 n.appendChild(document.createTextNode('Saved network: '));
 var k=document.createElement('strong');k.textContent=cur;n.appendChild(k);
-n.appendChild(document.createTextNode('. To keep it (to change only the device name, say), leave the network and password blank.'));
+n.appendChild(document.createTextNode('. To keep it, leave the network and password blank.'));
 s.form.insertBefore(n,s.form.firstChild);
 s.placeholder=cur+' (saved)';
 p.placeholder='saved - type to replace';
