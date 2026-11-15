@@ -14,6 +14,7 @@
 #include <Wire.h>
 #include <WiFi.h>
 #include <esp_wifi.h>
+#include <nvs.h>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <Preferences.h>
@@ -37,9 +38,10 @@
 #include "secrets.h"
 #endif
 #include "web_page.h"
+#include "portal_style.h"
 
 // Bump on each release -- format: YYYY-MM-DDrN.
-#define FIRMWARE_VERSION "2026-11-13r1"
+#define FIRMWARE_VERSION "2026-11-15r1"
 
 // ---- Build-time defaults (see platformio.ini) ---------------------------------
 #ifndef OTA_PASSWORD
@@ -131,7 +133,7 @@ const uint32_t I2C_CLOCK_HZ = 100000;  // 400 kHz was unreliable on the sm2k ben
 const int LED_PIN = 8;
 const uint8_t LED_BRIGHTNESS = 16;  // NeoPixel, 0-255; full brightness is blinding
 const uint32_t LED_FLASH_HALF_PERIOD_MS = 500;
-enum LedColor { LED_OFF_C, LED_GREEN, LED_YELLOW, LED_BLUE, LED_RED, LED_PURPLE, LED_WHITE };
+enum LedColor { LED_OFF_C, LED_GREEN, LED_YELLOW, LED_BLUE, LED_RED, LED_PURPLE, LED_CYAN, LED_WHITE };
 
 // ---- Vibration detection ------------------------------------------------------
 // Samples are high-passed against a slow per-axis baseline (removes gravity and
@@ -838,11 +840,25 @@ void serviceOta() {
 // ==========================================
 // Status LED
 // ==========================================
-// NeoPixel: green = idle, yellow = vibration seen but not (yet) a run,
-// blue = running, flashing red = accelerometer missing, purple = setup portal
-// open, flashing white = boot window in which a second RESET press opens the
-// portal. Plain LED: off = idle, on = vibration seen, slow blink = running,
-// fast blink = accelerometer missing, on = setup portal.
+// The machine's state is the base colour; anything that needs attention blinks
+// over it, so a glance still shows whether the machine is running.
+//
+// NeoPixel (SuperMini v2):
+//   green / yellow / blue      idle / vibration seen, not (yet) a run / running
+//   white, fast flicker        first 5 s after a reset: press RESET again for the portal
+//   cyan, blinking             joining Wi-Fi at boot
+//   purple <-> state colour    setup portal open, board still monitoring
+//   purple, steady             setup portal open on a new board (nothing saved yet)
+//   cyan <-> state colour      Wi-Fi down, retrying every 30 s
+//   red, blinking              accelerometer missing (red <-> cyan if Wi-Fi is down too)
+//
+// Plain LED (older SuperMini, lit when GPIO 8 is LOW):
+//   off / on / slow blink      idle / vibration seen / running
+//   fast flicker               first 5 s after a reset
+//   double blink every 1.5 s   setup portal open (steady on, on a new board)
+//   short blip every 2 s       joining Wi-Fi or Wi-Fi down
+//   fast blink                 accelerometer missing
+bool wifiJoining = false;   // the blocking join at boot (the LED is updated from its wait loop)
 
 void ledWrite(LedColor c) {
 #if LED_NEOPIXEL
@@ -853,26 +869,50 @@ void ledWrite(LedColor c) {
     case LED_BLUE:   rgbLedWrite(LED_PIN, 0, 0, b); break;
     case LED_RED:    rgbLedWrite(LED_PIN, b, 0, 0); break;
     case LED_PURPLE: rgbLedWrite(LED_PIN, b, 0, b); break;
+    case LED_CYAN:   rgbLedWrite(LED_PIN, 0, b, b); break;
     case LED_WHITE:  rgbLedWrite(LED_PIN, b, b, b); break;
     default:         rgbLedWrite(LED_PIN, 0, 0, 0); break;
   }
 #else
   pinMode(LED_PIN, OUTPUT);
-  digitalWrite(LED_PIN, c == LED_OFF_C || c == LED_GREEN ? HIGH : LOW);  // active low
+  digitalWrite(LED_PIN, c == LED_OFF_C ? HIGH : LOW);  // active low
 #endif
 }
 
+bool wifiProblem() { return !portalOpen && WiFi.status() != WL_CONNECTED; }
+
+// Called on every sample (400 Hz) and from the boot-time join loop. Cheap: it
+// only writes to the LED when the colour changes.
 void updateStatusLed() {
   static int last = -1;
   uint32_t ms = millis();
-  bool slow = (ms / LED_FLASH_HALF_PERIOD_MS) % 2 == 0;
-  bool fast = (ms / 125) % 2 == 0;
+  bool half = (ms / LED_FLASH_HALF_PERIOD_MS) % 2;   // 0.5 s phases
+#if LED_NEOPIXEL
+  LedColor state = !accelOk        ? LED_RED
+                 : deviceRunning   ? LED_BLUE
+                 : lastRms >= cfg.offRms ? LED_YELLOW
+                                   : LED_GREEN;
   LedColor c;
-  if (portalOpen) c = LED_PURPLE;
-  else if (!accelOk) c = LED_NEOPIXEL ? (slow ? LED_RED : LED_OFF_C) : (fast ? LED_RED : LED_OFF_C);
-  else if (deviceRunning) c = LED_NEOPIXEL ? LED_BLUE : (slow ? LED_BLUE : LED_OFF_C);
-  else if (lastRms >= cfg.offRms) c = LED_YELLOW;
-  else c = LED_GREEN;
+  if (wifiJoining)       c = half ? LED_CYAN : LED_OFF_C;
+  else if (portalOpen)   c = half ? LED_PURPLE : state;
+  else if (wifiProblem()) c = half ? LED_CYAN : state;
+  else if (!accelOk)     c = half ? LED_RED : LED_OFF_C;
+  else                   c = state;
+#else
+  bool on;
+  if (portalOpen) {
+    uint32_t t = ms % 1500;   // double blink
+    on = t < 150 || (t >= 300 && t < 450);
+  } else if (!accelOk) {
+    on = (ms / 125) % 2;
+  } else {
+    on = deviceRunning ? half : lastRms >= cfg.offRms;
+    if (wifiJoining || wifiProblem()) {
+      if (ms % 2000 < 120) on = !on;   // short blip
+    }
+  }
+  LedColor c = on ? LED_WHITE : LED_OFF_C;
+#endif
   if ((int)c == last) return;
   last = c;
   ledWrite(c);
@@ -1395,10 +1435,10 @@ void applySettings(const Settings &c, bool useDefaults) {
 // ==========================================
 // Wi-Fi: setup portal (WiFiManager), connection and watchdog
 // ==========================================
-// The portal opens on first boot (no saved network), when the saved network
-// can't be joined, after a double press of RESET, or from the web page. It's
-// an open access point named "DeviceMonitor-XXXX": join it from a phone, pick
-// the Wi-Fi network and set the device name.
+// The portal opens on first boot (no saved network), when a saved network this
+// board has never joined can't be joined, after a double press of RESET, or from
+// the web page. It's an open access point named "DeviceMonitor-XXXX": join it
+// from a phone, pick the Wi-Fi network and set the device name.
 bool portalSaved = false;
 void onPortalSave() { portalSaved = true; }
 
@@ -1418,11 +1458,14 @@ void configurePortal(WiFiManager &wm) {
   if (!pName) {
     static char adminHint[] = "";
     pName = new WiFiManagerParameter("devname", "Device name (lowercase letters, digits and -; it becomes &lt;name&gt;.local)",
-                                     net.name, sizeof(net.name) - 1);
+                                     net.name, sizeof(net.name) - 1,
+                                     "autocorrect=\"off\" autocapitalize=\"none\" spellcheck=\"false\" autocomplete=\"off\"");
     pAdmin = new WiFiManagerParameter("admin", "New admin password for the web page (8+ characters; empty keeps the current one)",
-                                      adminHint, sizeof(net.adminPass) - 1, "type=\"password\"");
+                                      adminHint, sizeof(net.adminPass) - 1,
+                                      "type=\"password\" autocorrect=\"off\" autocapitalize=\"none\" spellcheck=\"false\" autocomplete=\"off\"");
   }
   wm.setTitle("Device Monitor");
+  wm.setCustomHeadElement(PORTAL_HEAD);
   wm.setHostname(net.name);
   wm.setSaveConfigCallback(onPortalSave);
   wm.setSaveParamsCallback(onPortalSave);
@@ -1466,6 +1509,62 @@ bool applyPortalFields() {
   }
   return changed;
 }
+
+// ---- Saved network bookkeeping ------------------------------------------------
+// The Wi-Fi driver keeps its saved network in its own NVS area, which survives a
+// USB flash. A board straight from the factory, or from other firmware, can carry
+// a network from somewhere else (one arrived with "szatxing"), and a board with a
+// saved network never opens the portal by itself. Our "devmon" namespace is empty
+// only on the first boot after this firmware is flashed onto such a board
+// (earlier device-monitor firmware used the same namespace), so that's when a
+// leftover network is forgotten. Must be checked before anything writes to it.
+bool nvsNamespaceEmpty() {
+  nvs_iterator_t it = nullptr;
+  esp_err_t err = nvs_entry_find(NVS_DEFAULT_PART_NAME, NVS_NS, NVS_TYPE_ANY, &it);
+  if (it) nvs_release_iterator(it);
+  return err == ESP_ERR_NVS_NOT_FOUND;
+}
+
+void forgetForeignWiFi() {
+  WiFi.mode(WIFI_STA);
+  wifi_config_t saved = {};
+  esp_wifi_get_config(WIFI_IF_STA, &saved);
+  if (!saved.sta.ssid[0]) {
+    logf("[WiFi] first boot of this firmware on this board; no Wi-Fi network saved");
+    return;
+  }
+  logf("[WiFi] first boot of this firmware on this board: forgetting \"%s\", left by earlier firmware",
+       (const char *)saved.sta.ssid);
+  wifi_config_t empty = {};
+  esp_wifi_set_config(WIFI_IF_STA, &empty);   // persistent: the driver stores it in flash
+}
+
+// The network this board last joined ("*" on a board upgraded from firmware that
+// didn't record it: whatever it has saved counts as known). A saved network the
+// board has never joined (a mistyped password, a network from elsewhere) opens
+// the portal when the join at boot fails. One that has worked before never does,
+// so a router restart can't put boards into the portal.
+String joinedSsid;
+bool joinedNoted = false;
+
+void loadJoinedSsid(bool fresh) {
+  prefs.begin(NVS_NS, false);
+  if (!fresh && !prefs.isKey("joined")) prefs.putString("joined", "*");
+  joinedSsid = prefs.getString("joined", "");
+  prefs.end();
+}
+
+void noteJoined() {
+  joinedNoted = true;
+  String ssid = WiFi.SSID();
+  if (!ssid.length() || ssid == joinedSsid) return;
+  joinedSsid = ssid;
+  prefs.begin(NVS_NS, false);
+  prefs.putString("joined", ssid);
+  prefs.end();
+}
+
+bool neverJoined(const char *ssid) { return joinedSsid != "*" && joinedSsid != ssid; }
 
 // NVS flag "drd" is set at power-up and cleared DOUBLE_RESET_WINDOW_MS later;
 // finding it already set means RESET was pressed again inside the window.
@@ -1563,15 +1662,26 @@ void setupWiFi(bool forcePortal) {
     logf("[WiFi] joining \"%s\"", (const char *)saved.sta.ssid);
     WiFi.begin();
     uint32_t start = millis();
-    while (WiFi.status() != WL_CONNECTED && millis() - start < WIFI_CONNECT_TIMEOUT_S * 1000UL) delay(250);
+    wifiJoining = true;
+    while (WiFi.status() != WL_CONNECTED && millis() - start < WIFI_CONNECT_TIMEOUT_S * 1000UL) {
+      updateStatusLed();
+      delay(20);
+    }
+    wifiJoining = false;
     lastWifiAttempt = millis();
     if (WiFi.status() == WL_CONNECTED) {
+      noteJoined();
       logf("[WiFi] connected to \"%s\", IP address %s, RSSI %d", WiFi.SSID().c_str(),
            WiFi.localIP().toString().c_str(), (int)WiFi.RSSI());
     } else {
       logf("[WiFi] can't join yet (last reason %u %s); retrying every %lu s (double-press RESET for the setup portal)",
            lastDisconnectReason, WiFi.disconnectReasonName((wifi_err_reason_t)lastDisconnectReason),
            (unsigned long)(WIFI_RETRY_MS / 1000));
+      if (!forcePortal && neverJoined((const char *)saved.sta.ssid)) {
+        logf("[WiFi] this board has never joined \"%s\": opening the setup portal so it can be changed",
+             (const char *)saved.sta.ssid);
+        forcePortal = true;
+      }
     }
     if (forcePortal) startBackgroundPortal(ap);
     return;
@@ -1588,6 +1698,7 @@ void setupWiFi(bool forcePortal) {
   wm.setConnectTimeout(WIFI_CONNECT_TIMEOUT_S);
 
   logf("[WiFi] connecting (or opening the \"%s\" setup portal)", ap);
+  ledWrite(LED_CYAN);   // blocking from here: the AP callback turns it purple
   bool ok = wm.autoConnect(ap);   // a new board: join from secrets.h, or the portal
   portalOpen = false;
   if (lastDisconnectReason) {
@@ -1603,6 +1714,7 @@ void setupWiFi(bool forcePortal) {
     restartWithReason("Wi-Fi setup portal timed out");
   }
   WiFi.setAutoReconnect(true);   // modem sleep left on, as in the original firmware
+  noteJoined();
   logf("[WiFi] connected to \"%s\", IP address %s", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
 }
 
@@ -1644,6 +1756,7 @@ void serviceBackgroundPortal() {
   esp_task_wdt_reset();
   if (bgPortal->process()) {
     // Saved and joined the (possibly new) network: restart cleanly on it.
+    noteJoined();
     applyPortalFields();
     logf("[WiFi] new settings saved in the setup portal");
     restartWithReason(REASON_USER);
@@ -1679,6 +1792,7 @@ void serviceNetwork(uint32_t now) {
     }
     return;
   }
+  if (!joinedNoted) noteJoined();
   serviceInflux(now);
   serviceNtfy(now);
 }
@@ -2216,6 +2330,7 @@ void checkRestartRequest(uint32_t now) {
 // Arduino entry points
 // ==========================================
 void setup(void) {
+  bool freshInstall = nvsNamespaceEmpty();   // before checkDoubleReset() writes to it
   Serial.begin(115200);
   Serial.setTxTimeoutMs(0);  // never block on a stalled USB host
   ledWrite(LED_WHITE);
@@ -2239,6 +2354,8 @@ void setup(void) {
 
   checkUnexpectedReset();
   checkOtaState();
+  if (freshInstall) forgetForeignWiFi();
+  loadJoinedSsid(freshInstall);
   if (!forcePortal) finishDoubleResetWindow();
   else {
     prefs.begin(NVS_NS, false);
@@ -2277,6 +2394,7 @@ void loop(void) {
   if ((int32_t)(nowUs - nextSampleUs) < 0) return;
   nextSampleUs += SAMPLE_PERIOD_US;
   if ((int32_t)(nowUs - nextSampleUs) > 0) nextSampleUs = nowUs + SAMPLE_PERIOD_US;  // fell behind
+  updateStatusLed();   // every sample, so the faster blink patterns come out right
 
   float x = bx, y = by, z = bz;  // no signal while the accelerometer is missing
   if (accelOk) {
@@ -2317,7 +2435,6 @@ void loop(void) {
   // Once per 250 ms window.
   uint32_t now = millis();
   processWindow(rms, now);
-  updateStatusLed();
   checkBootEpoch();
   checkPeriodicReading(now);
   serviceNetwork(now);
