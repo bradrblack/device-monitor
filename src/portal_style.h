@@ -5,7 +5,9 @@
 // The script turns off autocorrect, auto-capitalisation, spell check and
 // autofill on every text field (WiFiManager's password box loses them when
 // "Show Password" turns it into a text box), makes each row of the network
-// list tappable across its whole width, requires a network name on a board that
+// list tappable across its whole width, spells out that blank network fields
+// keep the saved network (WiFiManager shows it, and "********", as grey
+// placeholders that look like filled-in values), requires a network name on a board that
 // has none saved, and replaces WiFiManager's terse "Saved" pages with what
 // happens next.
 #pragma once
@@ -39,6 +41,8 @@ input[type=checkbox]{display:inline-block;width:18px;height:18px;margin:12px 8px
 input[type=checkbox]+label{display:inline;margin:0;font-weight:500}
 .msg,body.invert .msg{margin:16px 0 8px;padding:12px 14px;font-size:14px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-left:4px solid var(--dim);border-radius:10px}
 .msg.S{border-left-color:var(--ok)}.msg.D{border-left-color:var(--bad)}.msg.P{border-left-color:var(--acc)}
+.note{margin:0 0 4px;padding:10px 12px;font-size:14px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:10px}
+input::placeholder{color:var(--dim);opacity:.7;font-style:italic}
 .net{display:flex;align-items:center;gap:8px;padding:13px 4px;border-bottom:1px solid var(--line);cursor:pointer}
 .net:first-of-type{border-top:1px solid var(--line)}
 .net a{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--fg);font-weight:600;text-decoration:none}
@@ -53,8 +57,20 @@ if(/^(checkbox|radio|file|hidden)$/.test(i.type))return;
 i.setAttribute('autocapitalize','none');i.setAttribute('autocorrect','off');
 i.setAttribute('spellcheck','false');i.setAttribute('autocomplete','off');
 });
-var s=document.getElementById('s');
-if(s&&!s.placeholder)s.required=true;
+var s=document.getElementById('s'),p=document.getElementById('p');
+if(s&&p){
+var cur=s.placeholder;
+if(cur){
+var n=document.createElement('div');n.className='note';
+n.appendChild(document.createTextNode('Saved network: '));
+var k=document.createElement('strong');k.textContent=cur;n.appendChild(k);
+n.appendChild(document.createTextNode('. To keep it (to change only the device name, say), leave the network and password blank.'));
+s.form.insertBefore(n,s.form.firstChild);
+s.placeholder='blank keeps '+cur;
+p.placeholder='blank keeps the saved password';
+s.form.addEventListener('submit',function(){if(s.value.trim()==cur&&!p.value)s.value='';});
+}else{s.required=true;s.placeholder='pick a network above';p.placeholder='blank for an open network';}
+}
 var t=document.title,m=document.querySelector('.msg'),b=document.querySelector("form[action='/']");
 if(m&&/^Credentials saved/.test(t)){
 m.className='msg P';
