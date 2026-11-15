@@ -29,6 +29,7 @@ soldered straight to the pads, with no headers.
 
 <img src="slide-fit.png" alt="Slide-in case, parts in the tray" width="420"/> <img src="slide-lid.png" alt="Slide-in lid from inside" width="420"/>
 <img src="slide-usb.png" alt="USB end" width="420"/> <img src="slide-top.png" alt="Lid from above: reset tab, vents" width="420"/>
+<img src="slide-side.png" alt="Closed case: lid vents and side-wall slots" width="420"/>
 
 | Wire | SuperMini pad | GY-346 pad |
 |---|---|---|
@@ -66,12 +67,15 @@ wire each (26-30 AWG).
   plunger under its round end. It sits over RESET as on the carrier: 9 mm from the USB
   end, on the far side when you look down with the USB-C pointing left. Press the tab to reset; a double press reopens the Wi-Fi
   portal. BOOT has no tab, since flashing over USB doesn't need it.
-- The lid has four 2.6 mm vent holes over the module, beside the reset tab. The rest
-  of the lid is solid because the antenna covers it, and holes under the antenna did
-  nothing. The tab's cut and the holes are chamfered on the top face, so the first
-  layers (the lid prints top down) don't squash them shut. There is no LED row
-  (`led_row = true` brings back 2 mm holes along the SuperMini's RESET-side edge)
-  and no label on the sides.
+- The lid has a grid of 2.6 mm vent holes (one block over the SuperMini, one over the
+  module), kept clear of the reset tab and the post and foot roots; the antenna shows
+  through the middle rows (`vents_over_antenna = false` drops those). The tab's cut
+  and the holes are chamfered on the top face, so the first layers (the lid prints
+  top down) don't squash them shut. Each long wall of the tray has five upright
+  1.6 x 2.6 mm slots beside the module, above the zip-tie slot (the SuperMini's
+  guides fill the walls further forward). There is no LED row (`led_row = true`
+  brings back 2 mm holes along the SuperMini's RESET-side edge) and no label on the
+  sides.
 - The lid clicks on with the same skirts, wedges and divots as the PCB case. There is
   also a slot for a 4.8 mm zip tie under the module.
 

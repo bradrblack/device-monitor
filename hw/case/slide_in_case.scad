@@ -144,6 +144,13 @@ bump_ang = 35; bump_flat = 0.4; bump_round = 0.2;
 bump_w = pad_w - 2; seat_w = bump_w + 1;
 bump_zc = skirt_z0 + 1.6;
 
+// Side vents: upright slots in both long walls beside the module, above the zip-tie
+// slot and below the lid's skirts and divots (the SuperMini's guides fill the
+// walls further forward)
+side_vents = true;
+sv_n = 5; sv_w = 1.6; sv_pitch = 3.2;
+sv_z0 = 3.4; sv_z1 = 6.0;
+
 // Zip-tie slot through both long walls, under the module (optional)
 strap = true;               // 4.8 mm zip tie (the slot fits between the front rail and the pin bosses)
 strap_w = 4.8; strap_h = 2;
@@ -153,6 +160,7 @@ vent_hole_d = 2.6;
 vent_pitch = 4.2;            // along the case
 vent_row = 3.6;              // between rows
 vent_chamfer = 0.4;          // countersink on the top face, for the same reason as tab_chamfer
+vents_over_antenna = true;   // drill the grid over the antenna too (Brad: looks, and it shows the antenna)
 led_row = false;             // row of 2 mm holes over the SuperMini's LED edge (off: Brad, 2026-11-15)
 led_hole_d = 2.0; led_pitch = 3;
 vent_margin = 0.8;           // web left round the tab, posts and feet
@@ -237,6 +245,10 @@ module tray() {
     }
     usb_port_cutter();
     at_inner() for (x = snap_x, side = [0, 1]) detent_seat(x, side);
+    if (side_vents) at_inner() for (i = [0 : sv_n - 1]) {
+      x = (gy_x0 + gy_x1) / 2 + (i - (sv_n - 1) / 2) * sv_pitch;
+      translate([x - sv_w / 2, -wall - 1, sv_z0]) cube([sv_w, out_w + 2, sv_z1 - sv_z0]);
+    }
     if (strap) at_inner() translate([strap_x - strap_slot_w / 2, -wall - 1, 0])
       cube([strap_slot_w, out_w + 2, strap_slot_h]);
   }
@@ -356,7 +368,8 @@ module tab_outline() {
 }
 
 // Vent holes: a square grid over the lid, kept clear of the reset tab, the roots
-// of the posts and feet, the skirts, and the antenna (holes it would cover do nothing).
+// of the posts and feet and the skirts. With vents_over_antenna false, it also
+// skips the holes the antenna would cover.
 module vents() at_inner() {
   m = vent_margin + vent_hole_d / 2;
   led_y = sk_in0 + 0.7 + led_hole_d / 2;
@@ -367,7 +380,7 @@ module vents() at_inner() {
     [post_x0, 0, post_x1, esp_y0 + post_over], [post_x0, esp_y1 - post_over, post_x1, in_w],
     [fx0, 0, fx1, gy_holes[0][1] + foot_w / 2], [fx0, gy_holes[1][1] - foot_w / 2, fx1, in_w],
     if (led_row) [esp_x0, led_y - led_hole_d / 2, esp_x1, led_y + led_hole_d / 2],
-    if (antenna) [ant_x0 - 0.3, ant_y0 - 0.1, ant_x0 + ant_l + 0.3, ant_y1 + 0.1]];
+    if (antenna && !vents_over_antenna) [ant_x0 - 0.3, ant_y0 - 0.1, ant_x0 + ant_l + 0.3, ant_y1 + 0.1]];
   rows = floor((sk_in1 - sk_in0 - 2 * m) / vent_row) + 1;
   y0 = (in_w - (rows - 1) * vent_row) / 2;
   // two blocks: over the SuperMini, and over the module between the posts and the
