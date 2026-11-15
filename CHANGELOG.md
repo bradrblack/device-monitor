@@ -4,6 +4,29 @@ Notable changes to the firmware, newest first. Versions refer to
 `FIRMWARE_VERSION` in `src/device-monitor.ino` (`src/vibration-monitor.ino`
 before 2026-11-13r1).
 
+## 2026-11-15r1
+
+- **New boards start clean.** Flash new boards with `pio run -t erase_upload`.
+  As a backstop, the first boot of this firmware on a board that has never run
+  it forgets any Wi-Fi network left by the factory firmware (one board arrived
+  with "szatxing" saved and never opened the portal).
+- **Portal for a network that has never worked.** If the saved network has never
+  been joined on this board and the join at boot fails, the setup portal opens
+  beside normal operation. A network the board has joined before still never
+  opens it (router restarts).
+- **Restyled setup portal**: card layout, styled buttons and network list, light
+  and dark to match the web page. Autocorrect, auto-capitalisation, spell check
+  and autofill are off on every field (the password box lost them when
+  "Show Password" was ticked).
+- **Saving in the portal** now says what happens next (the board joins and the
+  setup Wi-Fi disappears, or it stays up if the join failed). Saving only the name
+  or admin password closes the portal at once instead of after its 5-minute
+  timeout. A board with no network saved requires one before Save.
+- **Clearer LED**: cyan while joining Wi-Fi, cyan blinking over the state colour
+  while Wi-Fi is down, purple blinking over the state colour while the portal is
+  open, double blink for the portal on a plain LED. The fast blink patterns now
+  actually blink (the LED was only updated every 250 ms).
+
 ## 2026-11-13r1
 
 Rebuilt on the Sump Master 2000 firmware, cut down to on/off detection.

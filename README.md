@@ -145,11 +145,20 @@ command line), the same toolchain as Sump Master 2000 (pioarduino platform
    want new boards to start with your Wi-Fi, ntfy topic, InfluxDB or MQTT
    already filled in. Everything in it can be set on the board instead.
 2. **Plug the SuperMini in by USB and flash** (this also installs the OTA
-   partition table, which can't be changed over the air):
+   partition table, which can't be changed over the air). For a **new board**,
+   erase it first, so nothing from the factory test firmware survives (boards can
+   arrive with someone else's Wi-Fi network saved, which stops the setup portal
+   opening):
    ```
-   pio run -t upload
+   pio run -t erase_upload
    ```
-   (For a SuperMini with a plain blue LED: `pio run -e devmon-plain-led -t upload`.)
+   To reflash a board that already runs this firmware and keep its settings
+   (name, Wi-Fi, calibration), use `pio run -t upload` instead.
+   (For a SuperMini with a plain blue LED: add `-e devmon-plain-led`.)
+
+   As a backstop, the firmware also forgets any Wi-Fi network it finds on the
+   first boot after it's flashed onto a board that has never run it, and says so
+   in the log.
    If the upload can't find the board, hold BOOT, tap RESET, release BOOT, and try again.
 3. **Watch it boot** (optional): `pio device monitor`. You'll see the banner,
    the accelerometer it found (`ADXL346 detected at 0x53`), and Wi-Fi.
@@ -173,11 +182,14 @@ A new board has no Wi-Fi network saved, so it opens a **setup portal**:
 
 The portal also opens:
 
-- **Only on a board with no network saved.** Once a network is saved, the board
-  never opens the portal by itself: if it can't join (router restarting, power cut
-  that outlasts the router), it keeps retrying the saved network every 30 s and
-  rejoins as soon as the router is back. If the portal does open on a new board
-  and nobody uses it, it closes after 5 minutes and the board restarts.
+- **On a board with no network saved.** If nobody uses the portal, it closes
+  after 5 minutes and the board restarts.
+- **When the saved network has never worked on this board** (a mistyped password,
+  a network from somewhere else) and the join at boot fails. The board keeps
+  monitoring with the portal open beside it, as for the on-demand portal below.
+- **Never for a network the board has joined before.** If it can't join (router
+  restarting, power cut that outlasts the router), it keeps retrying the saved
+  network every 30 s and rejoins as soon as the router is back.
 - **On demand**: press **RESET twice**, about a second apart: the flex tab on the
   slide-in lid, or a paperclip through the PCB case's lid. (The LED flashes white for the first 5 seconds after any reset; a
   second press in that time opens the portal.) Or use **Change Wi-Fi network**
@@ -185,7 +197,8 @@ The portal also opens:
 
 On a board that already has a network, the on-demand portal never takes it
 offline. The board joins its saved network first and keeps monitoring and
-reporting while the portal is open beside it (the LED stays purple). If nobody
+reporting while the portal is open beside it (the LED alternates purple with
+its usual colour). If nobody
 uses the portal, it closes after 5 minutes and the board carries on as before. The
 board's own web page is unavailable while the portal is open, because both use
 port 80. This matters because the C3 can't tell a RESET press from a power
@@ -460,11 +473,20 @@ Bump `FIRMWARE_VERSION` in `src/device-monitor.ino` for each release.
   until it's known which), which is what the passive calibration readings and the
   Grafana vibration panel show.
 
-**LED** (v2 RGB LED): **green** idle, **yellow** vibration seen but not (yet) a run,
-**blue** running, **flashing red** accelerometer missing, **purple** setup portal
-open, **flashing white** the 5 seconds after a reset (press RESET again now for
-the portal). With a plain LED: off idle, on vibration seen, slow blink running,
-fast blink accelerometer missing, on while the portal is open.
+**LED.** The steady colour is the machine's state; anything that needs attention
+blinks over it every half second, so a glance still shows whether the machine runs.
+
+| What | RGB LED (v2) | Plain LED |
+| --- | --- | --- |
+| Idle | green | off |
+| Vibration seen, not (yet) a run | yellow | on |
+| Running | blue | slow blink |
+| First 5 s after a reset (press RESET again for the portal) | white, fast flicker | fast flicker |
+| Joining Wi-Fi at boot | cyan, blinking | short blip every 2 s |
+| Setup portal open, board still monitoring | purple ⇄ state colour | double blink |
+| Setup portal open on a new board | purple, steady | on |
+| Wi-Fi down, retrying every 30 s | cyan ⇄ state colour | short blip every 2 s |
+| Accelerometer missing | red, blinking (red ⇄ cyan if Wi-Fi is down too) | fast blink |
 
 Serial (115200) prints a status line each second:
 `rms=0.208 max=0.219 loud=0 state=idle wifi=up iq=0` (`max` the loudest window
