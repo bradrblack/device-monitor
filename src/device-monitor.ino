@@ -1464,9 +1464,9 @@ void configurePortal(WiFiManager &wm) {
     pName = new WiFiManagerParameter("devname", "Device name (lowercase letters, digits and -; it becomes &lt;name&gt;.local)",
                                      net.name, sizeof(net.name) - 1,
                                      "autocorrect=\"off\" autocapitalize=\"none\" spellcheck=\"false\" autocomplete=\"off\"");
-    pAdmin = new WiFiManagerParameter("admin", "New admin password for the web page (8+ characters; empty keeps the current one)",
+    pAdmin = new WiFiManagerParameter("admin", "Admin password for the web page (8+ characters)",
                                       adminHint, sizeof(net.adminPass) - 1,
-                                      "type=\"password\" autocorrect=\"off\" autocapitalize=\"none\" spellcheck=\"false\" autocomplete=\"off\"");
+                                      "type=\"password\" placeholder=\"saved - type to replace\" autocorrect=\"off\" autocapitalize=\"none\" spellcheck=\"false\" autocomplete=\"off\"");
   }
   wm.setTitle("Device Monitor");
   wm.setCustomHeadElement(PORTAL_HEAD);
