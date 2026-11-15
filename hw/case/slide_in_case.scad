@@ -129,6 +129,8 @@ tab_len = 12;                // button centre to the tongue's root (toward the b
 tab_t = 1.2;                 // tongue thickness (thinned from inside so it flexes): 6 layers at 0.2
 tab_ramp = 2.5;              // the thinning ramps back to full lid thickness over this length at the root
 tab_slot = 0.6;              // cut around it
+tab_chamfer = 0.5;           // the cut widens to tab_slot + 2 x this at the lid's top face, so the
+                             // first layers (squashed on the bed: the lid prints top down) don't close it
 plunger_d = 2.4;
 btn_gap = 0.5;               // plunger tip above the button at rest
 
@@ -150,7 +152,9 @@ strap_slot_w = strap_w + 1; strap_slot_h = strap_h + 0.6;
 vent_hole_d = 2.6;
 vent_pitch = 4.2;            // along the case
 vent_row = 3.6;              // between rows
-led_hole_d = 2.0; led_pitch = 3;   // LED row along the RESET-side edge
+vent_chamfer = 0.4;          // countersink on the top face, for the same reason as tab_chamfer
+led_row = false;             // row of 2 mm holes over the SuperMini's LED edge (off: Brad, 2026-11-15)
+led_hole_d = 2.0; led_pitch = 3;
 vent_margin = 0.8;           // web left round the tab, posts and feet
 
 // ======================= DERIVED =======================
@@ -315,10 +319,11 @@ module lid() {
     // back to full thickness at the root so the bend isn't at a sharp step
     at_inner() {
       root_x = btn_xy[0] + tab_len;
-      translate([0, 0, in_h - 1]) linear_extrude(lid_t + 2) difference() {
-        offset(delta = tab_slot) tab_outline();
-        tab_outline();
-        translate([root_x, btn_xy[1] - tab_w / 2 - tab_slot - 1]) square([tab_slot + 1, tab_w + 2 * tab_slot + 2]);
+      translate([0, 0, in_h - 1]) linear_extrude(lid_t + 2) tab_slot_2d();
+      // 45 deg chamfer round the cut on the top face
+      translate([0, 0, in_h + lid_t - tab_chamfer]) minkowski() {
+        linear_extrude(0.01) tab_slot_2d();
+        cylinder(r1 = 0, r2 = tab_chamfer + 0.01, h = tab_chamfer + 0.01, $fn = 12);
       }
       thin = lid_t - tab_t;
       translate([0, 0, in_h - 0.01]) linear_extrude(thin + 0.01) intersection() {
@@ -337,14 +342,21 @@ module lid() {
   // plunger under the tab's round end
   at_inner() translate([btn_xy[0], btn_xy[1], plunger_z0]) cylinder(d = plunger_d, h = in_h + lid_t - tab_t - plunger_z0 + 0.01);
 }
+module tab_slot_2d() {
+  root_x = btn_xy[0] + tab_len;
+  difference() {
+    offset(delta = tab_slot) tab_outline();
+    tab_outline();
+    translate([root_x, btn_xy[1] - tab_w / 2 - tab_slot - 1]) square([tab_slot + 1, tab_w + 2 * tab_slot + 2]);
+  }
+}
 module tab_outline() {
   translate(btn_xy) circle(d = tab_pad_d);
   translate([btn_xy[0], btn_xy[1] - tab_w / 2]) square([tab_len, tab_w]);
 }
 
-// Vent holes: a square grid over the lid (the onboard LED shows through),
-// kept clear of the reset tab, the roots of the posts and feet, and the skirts.
-// The middle rows open onto the antenna, which sticks to the webbing between them.
+// Vent holes: a square grid over the lid, kept clear of the reset tab, the roots
+// of the posts and feet, the skirts, and the antenna (holes it would cover do nothing).
 module vents() at_inner() {
   m = vent_margin + vent_hole_d / 2;
   led_y = sk_in0 + 0.7 + led_hole_d / 2;
@@ -354,7 +366,8 @@ module vents() at_inner() {
     // posts and feet, including the corbels that step out under the antenna strip
     [post_x0, 0, post_x1, esp_y0 + post_over], [post_x0, esp_y1 - post_over, post_x1, in_w],
     [fx0, 0, fx1, gy_holes[0][1] + foot_w / 2], [fx0, gy_holes[1][1] - foot_w / 2, fx1, in_w],
-    [esp_x0, led_y - led_hole_d / 2, esp_x1, led_y + led_hole_d / 2]];
+    if (led_row) [esp_x0, led_y - led_hole_d / 2, esp_x1, led_y + led_hole_d / 2],
+    if (antenna) [ant_x0 - 0.3, ant_y0 - 0.1, ant_x0 + ant_l + 0.3, ant_y1 + 0.1]];
   rows = floor((sk_in1 - sk_in0 - 2 * m) / vent_row) + 1;
   y0 = (in_w - (rows - 1) * vent_row) / 2;
   // two blocks: over the SuperMini, and over the module between the posts and the
@@ -365,12 +378,15 @@ module vents() at_inner() {
   for (b = blocks, jr = [0 : rows - 1]) {
     y = y0 + jr * vent_row;
     hits = [for (x = b, r = keep_out) if (x > r[0] - m && x < r[2] + m && y > r[1] - m && y < r[3] + m) 1];
-    if (len(hits) == 0) for (x = b) translate([x, y, in_h - 1]) cylinder(d = vent_hole_d, h = lid_t + 2, $fn = 24);
+    if (len(hits) == 0) for (x = b) translate([x, y, in_h - 1]) {
+      cylinder(d = vent_hole_d, h = lid_t + 2, $fn = 24);
+      translate([0, 0, 1 + lid_t - vent_chamfer]) cylinder(d1 = vent_hole_d, d2 = vent_hole_d + 2 * vent_chamfer + 0.02, h = vent_chamfer + 0.01, $fn = 24);
+    }
   }
   // LED row: smaller holes along the SuperMini's RESET-side edge, where the LED is,
   // between the skirt and the reset tab.
-  assert(led_y + led_hole_d / 2 + 0.7 <= btn_xy[1] - tab_pad_d / 2 - tab_slot, "LED row hits the reset tab");
-  for (x = [esp_x0 + 1.5 : led_pitch : esp_x1 - 1]) translate([x, led_y, in_h - 1]) cylinder(d = led_hole_d, h = lid_t + 2, $fn = 20);
+  if (led_row) assert(led_y + led_hole_d / 2 + 0.7 <= btn_xy[1] - tab_pad_d / 2 - tab_slot - tab_chamfer, "LED row hits the reset tab");
+  if (led_row) for (x = [esp_x0 + 1.5 : led_pitch : esp_x1 - 1]) translate([x, led_y, in_h - 1]) cylinder(d = led_hole_d, h = lid_t + 2, $fn = 20);
 }
 
 // =============== stand-in parts (preview and clash check) ===============

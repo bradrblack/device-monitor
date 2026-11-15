@@ -12,7 +12,7 @@ screws, and both clamp the accelerometer firmly so it feels the machine's vibrat
 | Parts held by | wall grooves, lid posts, floor rails and pins | printed pins through the PCB's holes, lid posts |
 | RESET | flex tab in the lid | guide tube for a paperclip |
 | Antenna | lid ceiling, in a recess | inside the lid's side skirt |
-| Status LED | row of holes along the RESET side | through the vent holes |
+| Status LED | through the reset tab's outline (thin lid) | through the vent holes |
 | Zip-tie slot | 4.8 mm | 5.5 mm |
 
 The slide-in case is smaller and needs no PCB order, only four short wires. Use the
@@ -28,7 +28,7 @@ tray, and each against the parts); every line must say ok after a change.
 soldered straight to the pads, with no headers.
 
 <img src="slide-fit.png" alt="Slide-in case, parts in the tray" width="420"/> <img src="slide-lid.png" alt="Slide-in lid from inside" width="420"/>
-<img src="slide-usb.png" alt="USB end" width="420"/> <img src="slide-top.png" alt="Lid from above: reset tab, LED row, vents" width="420"/>
+<img src="slide-usb.png" alt="USB end" width="420"/> <img src="slide-top.png" alt="Lid from above: reset tab, vents" width="420"/>
 
 | Wire | SuperMini pad | GY-346 pad |
 |---|---|---|
@@ -66,9 +66,12 @@ wire each (26-30 AWG).
   plunger under its round end. It sits over RESET as on the carrier: 9 mm from the USB
   end, on the far side when you look down with the USB-C pointing left. Press the tab to reset; a double press reopens the Wi-Fi
   portal. BOOT has no tab, since flashing over USB doesn't need it.
-- The lid has a grid of 2.6 mm vent holes (one block over the SuperMini, one over the module), kept
-  clear of the reset tab and the post and foot roots, plus a row of 2 mm holes along
-  the SuperMini's RESET-side edge, over its LED. There is no label on the sides.
+- The lid has four 2.6 mm vent holes over the module, beside the reset tab. The rest
+  of the lid is solid because the antenna covers it, and holes under the antenna did
+  nothing. The tab's cut and the holes are chamfered on the top face, so the first
+  layers (the lid prints top down) don't squash them shut. There is no LED row
+  (`led_row = true` brings back 2 mm holes along the SuperMini's RESET-side edge)
+  and no label on the sides.
 - The lid clicks on with the same skirts, wedges and divots as the PCB case. There is
   also a slot for a 4.8 mm zip tie under the module.
 
@@ -101,7 +104,7 @@ through the slot under the module for a pipe. See [Mounting](#mounting) below.
 
 Print `slide_tray.stl` floor down and `slide_lid.stl` as exported (ceiling on the
 bed): PLA or PETG, 0.2 mm layers, 3 walls, no supports. A light-coloured lid lets the
-LED show through its row of holes. To re-export after a change:
+LED glow through the thin lid and the tab's outline. To re-export after a change:
 
 ```
 ./check_case.sh slide_in_case.scad      # each line must say ok
