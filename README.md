@@ -59,7 +59,7 @@ After that, updates go over Wi-Fi: [Updating firmware](#updating-firmware).
 | Printed case (tray and lid) | 1 | [Case](#case): slide-in or PCB |
 | Thin wire, 26-30 AWG | 4 x 35 mm | Slide-in case only |
 | Carrier PCB | 1 | PCB case only: [Carrier PCB](#carrier-pcb) |
-| 100-470 µF electrolytic capacitor | 1 | PCB case only, optional: across 3V3/GND next to the accelerometer (max 8 x 12.5 mm, 2.5 mm pitch) |
+| 100-470 µF electrolytic capacitor | 0 | Optional pad on the carrier PCB, across 3V3/GND next to the accelerometer. It does not fit the printed PCB case, so leave it off |
 | USB-C cable and a 5 V USB power supply | 1 | Any phone charger |
 
 **Pins** (the same for both cases):
@@ -105,15 +105,16 @@ built around are in **[hw/PCB.md](hw/PCB.md)**. Upload
 Two printed cases, both a tray and a lid that click together with no screws and
 clamp the accelerometer firmly so it feels the machine:
 
-- **Slide-in case (recommended), 46 x 28 x 15 mm.** No PCB. The SuperMini slides
+- **Slide-in case (recommended), 56 x 28 x 15 mm.** No PCB. The SuperMini slides
   into grooves in the walls with its USB-C in the end wall, and the GY-346 sits on
   rails and two pins. Four wires join them (3V3 to VIN, GND, GPIO 5 to SDA, GPIO 6
-  to SCL). A flex tab in the lid presses RESET, a row of holes shows the LED, and
-  the ribbon antenna sticks to the lid ceiling. Print `hw/case/slide_tray.stl` and
+  to SCL). A flex tab in the lid presses RESET, the vent holes show the LED, the
+  ribbon antenna sticks to the lid ceiling and its cable winds round two posts. Print `hw/case/slide_tray.stl` and
   `hw/case/slide_lid.stl`.
-- **PCB case, 56 x 31 x 23 mm.** For the [carrier PCB](#carrier-pcb). Printed pins
-  go through the board's holes, lid posts clamp it, and a guide tube over RESET
-  takes a paperclip. It fits with or without the bulk capacitor. Print
+- **PCB case, 56 x 31 x 17 mm.** For the [carrier PCB](#carrier-pcb), built without
+  the optional capacitor. Printed pins go through the board's holes and lid posts
+  clamp it. The lid is the same design as the slide-in case's: reset tab, vent
+  holes, antenna and cable posts. Print
   `hw/case/tray.stl` and `hw/case/lid.stl`.
 
 Print in PLA or PETG with no supports; a light-coloured lid lets the status LED

@@ -13,8 +13,9 @@
 //     the pin row's solder tails, one under its rear edge). Two pins on the rear rail
 //     come up through its mounting holes, and two small lid feet press on the
 //     board round the holes, clear of its parts (as the solid H1 post on the PCB case).
-//   - Ribbon antenna (about 40 x 11 mm) stuck flat to the lid's ceiling, in the
-//     strip that the reset tab, the posts and the feet leave clear.
+//   - Ribbon antenna (40 x 11 mm) stuck flat to the lid's ceiling, in the strip
+//     that the reset tab, the posts and the feet leave clear. Its 120 mm cable is
+//     wound once round two fat posts under the lid, past the module.
 //
 // Closure: the same lid as device_monitor_case.scad. Lid skirts slide down inside
 // the tray's long walls, and a wedge on each skirt clicks into a divot in the wall.
@@ -28,7 +29,8 @@
 //      the end-wall hole. The module hangs off the wires meanwhile.
 //   3. Drop the GY-346 onto its two pins, header pads toward the SuperMini, components up.
 //   4. Stick the antenna to the ceiling inside the lid (the shallow outline marks
-//      its spot). Push the lid straight down until the four wedges click.
+//      its spot), wind its cable once round the two posts and plug it into the
+//      SuperMini. Push the lid straight down until the four wedges click.
 //
 // Render (from this folder):
 //   openscad -o slide_tray.stl -D 'part="tray"' slide_in_case.scad
@@ -82,9 +84,19 @@ gy_parts = [
   [10.7, 11.8, 0.3, 2.7, 1.3],   // 0805 left of the right hole
   [1.2, 12.9, 3.0, 6.0, 1.3]];   // row of 0603s and the ADXL chip
 
-// External ribbon antenna for the SuperMini's u.FL (optional).
+// External ribbon antenna for the SuperMini's u.FL (optional): 40 x 11 mm on a
+// 120 mm cable (Brad, 2026-11-15).
 antenna = true;
 ant_l = 40; ant_w = 11; ant_t = 0.3;
+// Cable posts (the cleat, as device_monitor_case.scad): two fat posts under the lid
+// past the module. The cable is wound once round them, which leaves about 50 mm
+// free to reach the u.FL connector. They make the case 9.6 mm longer; set
+// cable_posts = false for the short case with a loose cable.
+cable_posts = true;
+cleat_d = 7;                 // fat, so the coax bends gently (about 4 mm radius)
+cleat_flare = 0.8;           // flared foot, so the turns can't slip off
+cleat_pitch = 10;            // between the two posts, across the case
+cleat_z0 = 4;                // posts' lower end above the floor
 
 // ======================= SHELL =======================
 wall = 2; floor_t = 2; lid_t = 2; corner_r = 2;
@@ -144,12 +156,12 @@ bump_ang = 35; bump_flat = 0.4; bump_round = 0.2;
 bump_w = pad_w - 2; seat_w = bump_w + 1;
 bump_zc = skirt_z0 + 1.6;
 
-// Side vents: upright slots in both long walls beside the module, above the zip-tie
-// slot and below the lid's skirts and divots (the SuperMini's guides fill the
-// walls further forward)
+// Side vents (as device_monitor_case.scad): a row of round holes, the same size as
+// the lid's, through each long wall and the lid skirt behind it. They sit between
+// the snaps and skip the lid posts.
 side_vents = true;
-sv_n = 5; sv_w = 1.6; sv_pitch = 3.2;
-sv_z0 = 3.4; sv_z1 = 6.0;
+sv_drop = 2.6;               // hole centre below the ceiling
+sv_skirt_extra = 0.6;        // the skirt's holes are this much wider, so the two line up
 
 // Zip-tie slot through both long walls, under the module (optional)
 strap = true;               // 4.8 mm zip tie (the slot fits between the front rail and the pin bosses)
@@ -175,19 +187,28 @@ gy_x0 = post_x1 + gy_gap; gy_x1 = gy_x0 + gy_l;
 gy_y0 = (in_w - gy_w) / 2; gy_y1 = gy_y0 + gy_w;
 gy_top = rail_h + gy_t;
 gy_holes = [for (s = [-1, 1]) [gy_x1 - gy_hole_in, in_w / 2 + s * gy_hole_pitch / 2]];
-in_l = max(gy_x1 + 1.4, ant_l + 1.5);
+ant_x0 = cable_posts ? 0.5 : (max(gy_x1 + 1.4, ant_l + 1.5) - ant_l) / 2;
+cleat_x = max(ant_x0 + ant_l, gy_x1) + 0.5 + cleat_flare + cleat_d / 2;
+in_l = cable_posts ? cleat_x + cleat_d / 2 + cleat_flare + 1.9 : max(gy_x1 + 1.4, ant_l + 1.5);
+cleat_xy = cable_posts ? [for (s = [-1, 1]) [cleat_x, in_w / 2 + s * cleat_pitch / 2]] : [];
 // Insertion: the board goes in flat behind the lip, so the lip must end at least
 // a board length (plus a little) from the far wall.
 strap_x = (gy_x0 + 2.0 + rail_w + gy_holes[0][0] - gy_hole_d / 2 - 1) / 2;
-lip_x0 = pad_zone; lip_x1 = in_l - esp_l - 0.5;
+lip_x0 = pad_zone; lip_x1 = min(in_l - esp_l - 0.5, esp_x1 - 3.5);
 usb_y = (esp_y0 + esp_y1) / 2;
 usb_z0 = esp_top - usb_margin; usb_z1 = esp_top + usb_h + usb_margin;
 btn_xy = [esp_x0 + btn_from_front, esp_y0 + btn_from_edge];
 plunger_z0 = esp_top + btn_top + btn_gap;
 sk_in0 = skirt_gap + skirt_t; sk_in1 = in_w - skirt_gap - skirt_t;   // skirts' inner faces
 ant_y0 = btn_xy[1] + tab_pad_d / 2 + tab_slot + 0.3; ant_y1 = ant_y0 + ant_w;
-ant_x0 = (in_l - ant_l) / 2;
-snap_x = [6, post_x1 + 5];
+snap_x = [6, cable_posts ? cleat_x - 0.5 : post_x1 + 5];
+sv_z = in_h - sv_drop;
+fx0 = gy_holes[0][0] - foot_fwd; fx1 = gy_holes[0][0] + foot_back;     // lid feet, along x
+// side-vent positions: on the lid's vent pitch, clear of the snap pockets, the posts and the feet
+sv_block = [[snap_x[0] - pad_w / 2, snap_x[0] + pad_w / 2], [snap_x[1] - pad_w / 2, snap_x[1] + pad_w / 2],
+            [post_x0, post_x1], [fx0, fx1]];
+sv_x = [for (x = [vent_pitch : vent_pitch : in_l - 3])
+        if (len([for (b = sv_block) if (x > b[0] - vent_hole_d / 2 - 0.7 && x < b[1] + vent_hole_d / 2 + 0.7) 1]) == 0) x];
 out_l = in_l + 2 * wall; out_w = in_w + 2 * wall;
 
 echo(str("slide-in case outside ", out_l, " x ", out_w, " x ", floor_t + in_h + lid_t,
@@ -245,10 +266,8 @@ module tray() {
     }
     usb_port_cutter();
     at_inner() for (x = snap_x, side = [0, 1]) detent_seat(x, side);
-    if (side_vents) at_inner() for (i = [0 : sv_n - 1]) {
-      x = (gy_x0 + gy_x1) / 2 + (i - (sv_n - 1) / 2) * sv_pitch;
-      translate([x - sv_w / 2, -wall - 1, sv_z0]) cube([sv_w, out_w + 2, sv_z1 - sv_z0]);
-    }
+    if (side_vents) at_inner() for (x = sv_x) translate([x, -wall - 1, sv_z])
+      rotate([-90, 0, 0]) cylinder(d = vent_hole_d, h = out_w + 2, $fn = 24);
     if (strap) at_inner() translate([strap_x - strap_slot_w / 2, -wall - 1, 0])
       cube([strap_slot_w, out_w + 2, strap_slot_h]);
   }
@@ -279,6 +298,8 @@ module skirt(side) {
     for (x = snap_x)
       translate([x - pad_w / 2, side ? y0 - 1 : y0 + pad_t, skirt_z0 - 1])
         cube([pad_w, skirt_t - pad_t + 1, in_h - skirt_z0 + 1]);
+    if (side_vents) for (x = sv_x) translate([x, y0 - 1, sv_z])
+      rotate([-90, 0, 0]) cylinder(d = vent_hole_d + sv_skirt_extra, h = skirt_t + 2, $fn = 24);
   }
   for (x = snap_x) intersection() {
     detent_bump(x, side);
@@ -300,6 +321,14 @@ module corbel_block(x0, x1, y_lo, y_hi, z_bot, root_y, root_hi = undef) {
   }
 }
 
+// A cable post: fat shank hanging from the ceiling, with a flared foot (45 deg,
+// printable upside down).
+module cleat_post(p) translate([p[0], p[1], cleat_z0]) {
+  cylinder(d = cleat_d + 2 * cleat_flare, h = 0.4);
+  translate([0, 0, 0.4]) cylinder(d1 = cleat_d + 2 * cleat_flare, d2 = cleat_d, h = cleat_flare);
+  cylinder(d = cleat_d, h = in_h - cleat_z0 + 0.01);
+}
+
 // =============== LID (modelled in place; flipped for printing) ===============
 module lid() {
   difference() {
@@ -307,6 +336,7 @@ module lid() {
       translate([0, 0, floor_t + in_h]) rbox(out_l, out_w, lid_t, corner_r);
       at_inner() {
         for (side = [0, 1]) skirt(side);
+        for (c = cleat_xy) cleat_post(c);
         // posts behind the SuperMini's rear corners, down to just above the floor.
         // Post A is under the clear strip by the reset tab; post B is beside the
         // antenna, so it is rooted on its skirt and steps out under the antenna.
@@ -316,7 +346,6 @@ module lid() {
         // over the holes; a bore clears the pin tip
         difference() {
           union() {
-            fx0 = gy_holes[0][0] - foot_fwd; fx1 = gy_holes[0][0] + foot_back;
             box([fx0, max(sk_in0 + 0.3, gy_holes[0][1] - foot_w / 2), gy_top - crush], [fx1, gy_holes[0][1] + foot_w / 2, in_h + 0.01]);
             // the other foot is beside the antenna strip: rooted on its skirt, it
             // steps out under the antenna and narrows to the pad near the board
@@ -373,12 +402,12 @@ module tab_outline() {
 module vents() at_inner() {
   m = vent_margin + vent_hole_d / 2;
   led_y = sk_in0 + 0.7 + led_hole_d / 2;
-  fx0 = gy_holes[0][0] - foot_fwd; fx1 = gy_holes[0][0] + foot_back;
   keep_out = [
     [btn_xy[0] - tab_pad_d / 2 - tab_slot, btn_xy[1] - tab_pad_d / 2 - tab_slot, btn_xy[0] + tab_len + tab_slot, btn_xy[1] + tab_pad_d / 2 + tab_slot],
     // posts and feet, including the corbels that step out under the antenna strip
     [post_x0, 0, post_x1, esp_y0 + post_over], [post_x0, esp_y1 - post_over, post_x1, in_w],
     [fx0, 0, fx1, gy_holes[0][1] + foot_w / 2], [fx0, gy_holes[1][1] - foot_w / 2, fx1, in_w],
+    for (c = cleat_xy) [c[0] - cleat_d / 2, c[1] - cleat_d / 2, c[0] + cleat_d / 2, c[1] + cleat_d / 2],
     if (led_row) [esp_x0, led_y - led_hole_d / 2, esp_x1, led_y + led_hole_d / 2],
     if (antenna && !vents_over_antenna) [ant_x0 - 0.3, ant_y0 - 0.1, ant_x0 + ant_l + 0.3, ant_y1 + 0.1]];
   rows = floor((sk_in1 - sk_in0 - 2 * m) / vent_row) + 1;
@@ -433,9 +462,14 @@ module wires_dummy() at_inner() color("red") for (y = [esp_y0 + 1.38 + 1, esp_y0
   }
 module antenna_dummy() if (antenna) at_inner() color("orange")
   box([ant_x0, ant_y0, in_h + 0.2 - ant_t], [ant_x0 + ant_l, ant_y1, in_h + 0.2]);
+// The cable where it is wound round the posts: one lap, just under the ceiling.
+module cable_dummy() if (antenna && cable_posts) color("black") at_inner() translate([0, 0, in_h - 2.2]) linear_extrude(1.2) difference() {
+  hull() for (c = cleat_xy) translate(c) circle(d = cleat_d + 2.6);
+  hull() for (c = cleat_xy) translate(c) circle(d = cleat_d + 0.2);
+}
 module tie_dummy() if (strap) color("black") at_inner()
   translate([strap_x - strap_w / 2, -wall - 0.5, 0.2]) cube([strap_w, out_w + 1, strap_h - 0.4]);
-module everything_else() { esp_dummy(); gy_dummy(); wires_dummy(); antenna_dummy(); tie_dummy(); }
+module everything_else() { esp_dummy(); gy_dummy(); wires_dummy(); antenna_dummy(); cable_dummy(); tie_dummy(); }
 
 // Everything above is laid out with the RESET side at low y. Looking down on the
 // SuperMini (USB-C to the left), RESET is on the far side, as on the carrier
@@ -451,7 +485,9 @@ reset_side_up() {
   else if (part == "clash_lid_parts") intersection() { lid(); everything_else(); }
   else if (part == "clash_tray_parts") intersection() { tray(); everything_else(); }
   else if (part == "closed") { color("steelblue") tray(); color("lightgray") lid(); }
-  else if (part == "fit") { tray(); everything_else(); }
+  else if (part == "fit") { tray(); esp_dummy(); gy_dummy(); wires_dummy(); tie_dummy(); }
+  else if (part == "lid_inside")   // the lid as printed (inside up), with the antenna and the wound cable
+    translate([0, out_w, floor_t + in_h + lid_t]) rotate([180, 0, 0]) { color("lightgray") lid(); antenna_dummy(); cable_dummy(); }
   else if (part == "feet") {   // the module from above, with the bottom 2 mm of the lid's feet over it
     gy_dummy();
     color("orangered", 0.8) intersection() { lid(); at_inner() box([gy_x0 + 0.5, -1, gy_top - 1], [in_l + 1, in_w + 1, gy_top + 2]); }
