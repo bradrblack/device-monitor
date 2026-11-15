@@ -7,28 +7,44 @@ screws, and both clamp the accelerometer firmly so it feels the machine's vibrat
 |---|---|---|
 | Source | `slide_in_case.scad` | `device_monitor_case.scad` |
 | Print | `slide_tray.stl`, `slide_lid.stl` | `tray.stl`, `lid.stl` |
-| Outside | 46.2 x 27.6 x 15 mm | 55.8 x 31 x 23 mm |
-| Electronics | SuperMini + GY-346, 4 wires soldered direct | SuperMini + GY-346 + bulk cap on the [carrier PCB](../PCB.md) |
+| Outside | 55.8 x 27.6 x 15 mm | 55.8 x 31 x 17 mm |
+| Electronics | SuperMini + GY-346, 4 wires soldered direct | SuperMini + GY-346 on the [carrier PCB](../PCB.md), without the optional capacitor C1 |
 | Parts held by | wall grooves, lid posts, floor rails and pins | printed pins through the PCB's holes, lid posts |
-| RESET | flex tab in the lid | guide tube for a paperclip |
-| Antenna | lid ceiling, in a recess | inside the lid's side skirt |
-| Status LED | row of holes along the RESET side | through the vent holes |
+| RESET | flex tab in the lid | the same flex tab |
+| Antenna | lid ceiling, in a recess | the same |
+| Antenna cable | wound once round two posts under the lid | the same |
+| Vents | 2.6 mm holes: a grid in the lid, a row of 5 in each long wall | the same |
+| Status LED | through the reset tab's outline (thin lid) and the vents | the same |
 | Zip-tie slot | 4.8 mm | 5.5 mm |
 
-The slide-in case is smaller and needs no PCB order, only four short wires. Use the
-PCB case if you already have carrier boards or want the bulk capacitor.
+The two cases share the lid design: the snap closure, the reset tab, the vent holes,
+the antenna recess and the cable posts are the same in both. The slide-in case needs
+no PCB order, only four short wires. The PCB case needs no wiring at all: the modules
+solder to the carrier and the carrier drops onto pins.
+
+### Antenna cable
+
+The antenna's cable is about 120 mm long, far more than the case needs. In both
+lids, two 7 mm posts with flared feet stand at the far end from the USB-C. Stick the
+antenna into its recess, run the cable to the posts and wind it **once** round the
+pair (about 46 mm). That leaves about 50 mm free to reach the SuperMini's u.FL
+connector, which is enough to lay the open lid beside the tray, with no loose loop
+to trap when you close it. The posts are fat so the thin coax bends at about 4 mm
+radius. In `slide_in_case.scad`, `cable_posts = false` gives the older short case
+(46.2 mm) without the posts.
 
 `check_case.sh [file.scad]` renders the clash checks for either case (lid against
 tray, and each against the parts); every line must say ok after a change.
 
 ## Slide-in case
 
-`slide_in_case.scad` builds a monitor without the carrier board: **46.2 x 27.6 x
+`slide_in_case.scad` builds a monitor without the carrier board: **55.8 x 27.6 x
 15 mm** outside. The ESP32-C3 SuperMini and the GY-346 are joined by four wires
 soldered straight to the pads, with no headers.
 
 <img src="slide-fit.png" alt="Slide-in case, parts in the tray" width="420"/> <img src="slide-lid.png" alt="Slide-in lid from inside" width="420"/>
-<img src="slide-usb.png" alt="USB end" width="420"/> <img src="slide-top.png" alt="Lid from above: reset tab, LED row, vents" width="420"/>
+<img src="slide-usb.png" alt="USB end" width="420"/> <img src="slide-top.png" alt="Lid from above: reset tab, vents" width="420"/>
+<img src="slide-side.png" alt="Closed case: lid vents and side-wall holes" width="420"/>
 
 | Wire | SuperMini pad | GY-346 pad |
 |---|---|---|
@@ -49,11 +65,17 @@ wire each (26-30 AWG).
   in pushes the board back into them, and pulling a cable out pulls it forward
   against the end wall. The wires run back between the posts.
 - The GY-346 sits on two floor rails with its header pads toward the SuperMini. Two
-  pins come up through its mounting holes, and two lid feet press the board down
-  around the holes. A firm clamp matters here, because a loose module reads its own
-  rattle as vibration.
+  pins come up through its mounting holes, and two small lid feet press the board
+  down around the holes. A firm clamp matters here, because a loose module reads its
+  own rattle as vibration. The feet stay on the bare board between each hole and the
+  module's edges, clear of the regulator, the 0805 parts and the big cap; the
+  module's parts are in the clash check (`gy_parts` in the scad, measured from a
+  photo of the board).
+
+<img src="slide-feet.png" alt="Lid feet over the GY-346, before and after" width="840"/>
 - The ribbon antenna sticks to the ceiling in a shallow recess down the lid's centre.
-  The reset tab, the posts and the feet all stay out of that strip.
+  The reset tab, the posts and the feet all stay out of that strip. Its cable winds
+  round the two posts past the module (see [Antenna cable](#antenna-cable)).
 - **USB-C:** the end wall has a stadium-shaped hole 10 x 4 mm. The SuperMini slides
   forward until its USB-C receptacle sits in the hole, about 1 mm back from the outside
   face, so a cable plugs straight in.
@@ -61,9 +83,15 @@ wire each (26-30 AWG).
   plunger under its round end. It sits over RESET as on the carrier: 9 mm from the USB
   end, on the far side when you look down with the USB-C pointing left. Press the tab to reset; a double press reopens the Wi-Fi
   portal. BOOT has no tab, since flashing over USB doesn't need it.
-- The lid has a grid of 2.6 mm vent holes (one block over the SuperMini, one over the module), kept
-  clear of the reset tab and the post and foot roots, plus a row of 2 mm holes along
-  the SuperMini's RESET-side edge, over its LED. There is no label on the sides.
+- The lid has a grid of 2.6 mm vent holes (one block over the SuperMini, one over the
+  module), kept clear of the reset tab and the post and foot roots; the antenna shows
+  through the middle rows (`vents_over_antenna = false` drops those). The tab's cut
+  and the holes are chamfered on the top face, so the first layers (the lid prints
+  top down) don't squash them shut. Each long wall has a row of five round holes
+  the same size, through the tray wall and the lid skirt behind it, between the
+  snaps (the row skips the lid post). There is no LED row (`led_row = true`
+  brings back 2 mm holes along the SuperMini's RESET-side edge) and no label on the
+  sides.
 - The lid clicks on with the same skirts, wedges and divots as the PCB case. There is
   also a slot for a 4.8 mm zip tie under the module.
 
@@ -76,7 +104,8 @@ wire each (26-30 AWG).
    locating pins, so it tilts about 2 degrees. Slide it forward: it levels out under the
    lip, and the USB-C ends up in the end-wall hole.
 3. Drop the GY-346 onto its two pins, components up.
-4. Stick the antenna into the lid's recess, then press the lid down until it clicks.
+4. Stick the antenna into the lid's recess, wind its cable once round the two posts
+   and plug it into the SuperMini. Then press the lid down until it clicks.
 
 ### Measurements
 
@@ -96,7 +125,7 @@ through the slot under the module for a pipe. See [Mounting](#mounting) below.
 
 Print `slide_tray.stl` floor down and `slide_lid.stl` as exported (ceiling on the
 bed): PLA or PETG, 0.2 mm layers, 3 walls, no supports. A light-coloured lid lets the
-LED show through its row of holes. To re-export after a change:
+LED glow through the thin lid and the tab's outline. To re-export after a change:
 
 ```
 ./check_case.sh slide_in_case.scad      # each line must say ok
@@ -109,9 +138,9 @@ openscad --export-format binstl -o slide_lid.stl  -D 'part="lid"'  slide_in_case
 <img src="case-closed.png" alt="Closed case" width="420"/> <img src="case-fit.png" alt="Carrier in the tray" width="420"/>
 
 A two-part printed case (tray + lid) for the device monitor carrier PCB
-(`../devmon_carrier.kicad_pcb`: ESP32-C3 SuperMini, GY-346 / ADXL346 module and one
-bulk capacitor). Outside it is **55.8 x 31 x 23 mm**. The case is the same whether or not C1 is fitted
-(the board works without it; it can be added later if needed).
+(`../devmon_carrier.kicad_pcb`: ESP32-C3 SuperMini and GY-346 / ADXL346 module).
+Outside it is **55.8 x 31 x 17 mm**. **The optional capacitor C1 does not fit this
+case:** it is too tall for the low lid, and a lid post stands on its footprint.
 
 | File | What it is |
 |---|---|
@@ -125,9 +154,8 @@ It is built from the author's two earlier cases:
 - From the **RF ceiling fan remote** case
   ([fan_dongle_case.scad](https://github.com/bradrblack/rf-ceiling-fan-remote/blob/main/hw/case/fan_dongle_case.scad)):
   no screws. Printed standoffs with pins go through the carrier's holes, and caps
-  (hook posts) hang from the lid to clamp the board. A guide tube hangs over the
-  RESET button for a paperclip. The USB and RESET positions are the same as on that
-  case (same SuperMini footprint and position).
+  (hook posts) hang from the lid to clamp the board. The USB and RESET positions
+  are the same as on that case (same SuperMini footprint and position).
 - From **Sump Master 2000**
   ([sump_case.scad](https://github.com/bradrblack/sump-master-2000/blob/main/hw/case/sump_case.scad)):
   the USB-C opening split between tray and lid (the tray's stub wall holds the lower
@@ -137,18 +165,22 @@ It is built from the author's two earlier cases:
   a rounded wedge on each pocket clicks into a divot in the tray wall. Closed,
   nothing is under load (0.1 mm clearance), so the fit doesn't creep loose.
 
-<img src="case-section.png" alt="Section along the board" width="600"/>
+- From the **slide-in case** above: the lid top. The reset flex tab, the grid of
+  chamfered vent holes, the row of holes in each long wall, the antenna recess under
+  the lid and the two cable posts.
+
+<img src="case-lid.png" alt="PCB case lid from inside: antenna, reset tab, cable posts" width="420"/> <img src="case-section.png" alt="Section along the board" width="420"/>
 
 ### How the board is held
 
 | Hole (KiCad x, y) | Tray | Lid |
 |---|---|---|
 | H5 (3.75, 8), H6 (3.75, 16) | standoff + pin | nothing (the ESP module is above them); these take the USB plug's push |
-| H1 (24.4, 12) | standoff + short pin, stopping inside the hole | solid 3.4 mm post pressing on the board around the hole (too tight between the ESP and J1 for a hollow cap) |
-| H2 (45.3, 17.5) | standoff + pin | hollow 4.5 mm cap over the pin, 0.3 mm above the board |
+| H1 (24.4, 12) | standoff + short pin, stopping inside the hole | nothing over the hole (the antenna is above it). A solid 3.4 mm post presses on the board 6 mm to the RESET side, at (24.4, 6), on the bare strip between the ESP and J1 |
+| H2 (45.3, 17.5) | standoff + pin | hollow 7 mm cap over the pin, 0.3 mm above the board. It is also one of the two cable posts |
 
 The board sits on 3 mm standoffs, so its solder tails clear the floor. Once closed, the
-H1 post and H2 cap hold the board down against its standoffs, so the accelerometer is
+press post and the H2 cap hold the board down against its standoffs, so the accelerometer is
 coupled to the case.
 
 ### Printing
@@ -163,24 +195,26 @@ coupled to the case.
 
 ### Assembly
 
-1. Drop the carrier onto the tray's pins. Its USB-C connector settles into the lower half
+1. Stick the antenna into the recess under the lid and wind its cable once round the
+   two posts (see [Antenna cable](#antenna-cable)).
+2. Drop the carrier onto the tray's pins. Its USB-C connector settles into the lower half
    of the port in the tray's end wall.
-2. Push the lid straight down until all four wedges click. Its end wall closes over the
-   top of the connector.
+3. Plug the cable into the SuperMini, then push the lid straight down until all four
+   wedges click. Its end wall closes over the top of the connector.
 
 To open it, pull the tray and lid apart firmly. The 35-degree wedge flanks let go
 without tools.
 
-**Reset:** push a paperclip or toothpick straight down through the hole near the USB end.
-It lands on the SuperMini's RESET button (pressing it twice reopens the Wi-Fi setup
+**Reset:** press the keyhole-shaped tab in the lid near the USB end. A plunger under
+it presses the SuperMini's RESET button (pressing it twice reopens the Wi-Fi setup
 portal; see the main README).
 
 ### Antenna
 
-The SuperMini v2's external ribbon antenna (about 40 x 11 mm) sticks flat to the inside of
-the lid's skirt on the side away from the capacitor (the side with the label on the tray),
-up against the ceiling. Stick it on before closing the case and route the cable to the
-module's u.FL connector. The clash check includes it there.
+The SuperMini v2's external ribbon antenna (40 x 11 mm) sticks flat under the lid, in
+the shallow recess beside the reset tab, starting at the USB end. The vent holes are
+drilled over it too. Its cable winds round the two posts at the far end. The clash
+check includes the antenna and the wound cable.
 
 ### Mounting
 
@@ -201,5 +235,5 @@ openscad --export-format binstl -o tray.stl -D 'part="tray"' device_monitor_case
 openscad --export-format binstl -o lid.stl  -D 'part="lid"'  device_monitor_case.scad
 ```
 
-The cavity height follows the tallest part, the 12.5 mm capacitor (`cap_h`). `part="section"` and
+The cavity height follows the tallest part, the SuperMini's USB-C connector. `part="section"` and
 `part="fit"` are useful previews.
