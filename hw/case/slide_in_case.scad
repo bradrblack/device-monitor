@@ -35,7 +35,7 @@
 // Render (from this folder):
 //   openscad -o slide_tray.stl -D 'part="tray"' slide_in_case.scad
 //   openscad -o slide_lid.stl  -D 'part="lid"'  slide_in_case.scad    (flipped, ceiling on the bed)
-//   openscad -o slide_tray_magnets.stl -D 'part="tray"' -D 'magnets="inside"' slide_in_case.scad   (magnet mount)
+//   openscad -o slide_tray_magnets.stl -D 'part="tray"' -D magnets=true slide_in_case.scad   (magnet mount)
 //   part="both" (default) is a preview with stand-in parts, "fit" the tray with the
 //   parts, "section" a cut through the SuperMini's centre line, "feet" the lid's
 //   feet over the GY-346 and its parts, "magnets" a see-through tray with its magnets. The "clash_*" parts
@@ -100,27 +100,21 @@ cleat_pitch = 10;            // between the two posts, across the case
 cleat_z0 = 4;                // posts' lower end above the floor
 
 // Magnet mount (optional): four 10 x 3 mm neodymium disc magnets in the tray floor,
-// to stick the monitor to a freezer, dryer or AC unit. The floor grows from 2 to
-// 3.8 mm (the case gets 1.8 mm taller); the footprint and the lid don't change.
-//   "none"   - plain floor (default)
-//   "inside" - pockets open into the cavity, 0.6 mm of floor left under each magnet.
-//              The floor skin sits between magnet and steel, so pulling the case
-//              off can't pull a magnet out: no glue needed. Two under the SuperMini,
-//              two behind the GY-346. Fit them before the electronics.
-//   "bottom" - flush pockets in the underside, 2 x 2. Full grip (no skin), but
-//              pulling the case off the steel pulls each magnet out of its pocket,
-//              so they must be glued (the QR label over them alone won't hold them).
-magnets = "none";
-mag_d = 10; mag_t = 3;       // the magnet (5 x 3 also fits: same floor, smaller pockets in the same spots)
+// to stick the monitor to a freezer, dryer or AC unit. The pockets open into the
+// cavity, with 0.6 mm of floor left under each magnet: that skin sits between the
+// magnet and the steel, so pulling the case off can't pull a magnet out and no glue
+// is needed. Two sit under the SuperMini, two behind the GY-346; fit them before the
+// electronics. The floor grows from 2 to 3.8 mm (the case gets 1.8 mm taller); the
+// footprint and the lid don't change.
+magnets = false;
+mag_d = 10; mag_t = 3;       // the magnet
 mag_hole_d = mag_d + 0.15;   // press fit on a typical 0.4 mm nozzle; mag_d + 0.3 if you'd rather glue them loose
 mag_depth = mag_t + 0.2;     // magnet ends 0.2 below the surface: never proud, room for a drop of glue
 mag_skin = 0.6;              // floor left over each pocket (3 layers at 0.2)
-mag_chamfer = 0.4;           // lead-in round the pocket mouth (also eats the elephant's foot on "bottom")
-mag_edge = 8.5;              // "bottom": pocket centres from the case's ends
-mag_pitch_y = 13.6;          // "bottom": between the two rows, across the case
+mag_chamfer = 0.4;           // lead-in round the pocket mouth
 
 // ======================= SHELL =======================
-wall = 2; floor_t = magnets == "none" ? 2 : mag_skin + mag_depth; lid_t = 2; corner_r = 2;
+wall = 2; floor_t = !magnets ? 2 : mag_skin + mag_depth; lid_t = 2; corner_r = 2;
 fit = 0.2;                   // general FDM clearance
 in_w = 23.6;                 // cavity width: the module's 21 plus room for the antenna strip beside the reset tab
 in_h = 11;                   // cavity height: USB-C top is ~7.4, plus room to bend the wires
@@ -234,14 +228,13 @@ out_l = in_l + 2 * wall; out_w = in_w + 2 * wall;
 // magnet pocket centres, in cavity coordinates
 mag_web = 0.7;               // plastic left between a pocket and its neighbours
 mag_xy =
-  magnets == "inside" ? concat(
+  magnets ? concat(
     // on the centre line under the SuperMini, between its side ledges, as far apart as it allows
     [for (x = [mag_hole_d / 2 + mag_chamfer, esp_x1 - mag_hole_d / 2 - mag_chamfer - 0.3]) [x, in_w / 2]],
     // across the case behind the GY-346's pin bosses, under the cable posts, spread
     // toward the long walls. The gap there is only 11 mm, so 10 mm pockets run
     // 0.5 mm under the end wall (solid floor below).
     [for (s = [-1, 1]) [in_l + 0.5 - mag_hole_d / 2 - mag_chamfer, in_w / 2 + s * (in_w / 2 - mag_hole_d / 2 - mag_chamfer - 0.6)]])
-  : magnets == "bottom" ? [for (x = [mag_edge, out_l - mag_edge], s = [-1, 1]) [x - wall, in_w / 2 + s * mag_pitch_y / 2]]
   : [];
 
 echo(str("slide-in case outside ", out_l, " x ", out_w, " x ", floor_t + in_h + lid_t,
@@ -252,8 +245,7 @@ assert(esp_y0 + post_over < ant_y0, "post A would cover the antenna");
 assert(usb_z1 < in_h - 1, "USB opening reaches the ceiling");
 assert(guide_top + 0.5 <= skirt_z0, "skirts reach down onto the side guides");
 assert(rail_h >= strap_slot_h, "zip tie doesn't fit under the module");
-assert(magnets == "none" || magnets == "inside" || magnets == "bottom", "magnets must be \"none\", \"inside\" or \"bottom\"");
-if (magnets == "inside") {
+if (magnets) {
   r = mag_hole_d / 2 + mag_chamfer;
   assert(mag_xy[0][0] - r >= 0, "front magnet pocket runs under the end wall");
   assert(mag_xy[1][0] - mag_xy[0][0] >= mag_hole_d + mag_web, "SuperMini magnet pockets overlap");
@@ -263,10 +255,6 @@ if (magnets == "inside") {
   for (m = [mag_xy[2], mag_xy[3]], h = gy_holes) assert(norm(m - h) >= (gy_hole_d + 2) / 2 + r + 0.3, "rear magnet pockets cut the pin bosses");
   assert(mag_xy[2][0] - r >= gy_holes[0][0] - rail_w / 2 + rail_w + 0.3, "rear magnet pockets cut the rear rail");
   assert(mag_xy[2][1] - r >= 0.5 && mag_xy[3][1] + r <= in_w - 0.5, "rear magnet pockets run into the long walls");
-}
-if (magnets == "bottom") {
-  assert(mag_edge - mag_hole_d / 2 - mag_chamfer >= 1.5, "bottom magnet pockets too near the ends");
-  assert(mag_pitch_y - mag_hole_d >= 2 * mag_web && out_w / 2 - mag_pitch_y / 2 - mag_hole_d / 2 - mag_chamfer >= 1.2, "bottom magnet pockets don't fit across");
 }
 assert(!strap || strap_slot_w <= gy_holes[0][0] - gy_hole_d / 2 - 1 - (gy_x0 + 2.0 + rail_w), "zip-tie slot cuts a rail or a pin boss");
 
@@ -325,13 +313,8 @@ module tray() {
 
 // Magnet pockets, each with a 45 deg lead-in at its mouth.
 module magnet_pockets() at_inner() for (m = mag_xy) translate([m[0], m[1], 0]) {
-  if (magnets == "inside") {
-    translate([0, 0, -mag_depth]) cylinder(d = mag_hole_d, h = mag_depth + 0.01, $fn = 64);
-    translate([0, 0, -mag_chamfer]) cylinder(d1 = mag_hole_d, d2 = mag_hole_d + 2 * mag_chamfer + 0.02, h = mag_chamfer + 0.01, $fn = 64);
-  } else {
-    translate([0, 0, -floor_t - 0.01]) cylinder(d = mag_hole_d, h = mag_depth + 0.01, $fn = 64);
-    translate([0, 0, -floor_t - 0.01]) cylinder(d1 = mag_hole_d + 2 * mag_chamfer + 0.02, d2 = mag_hole_d, h = mag_chamfer + 0.01, $fn = 64);
-  }
+  translate([0, 0, -mag_depth]) cylinder(d = mag_hole_d, h = mag_depth + 0.01, $fn = 64);
+  translate([0, 0, -mag_chamfer]) cylinder(d1 = mag_hole_d, d2 = mag_hole_d + 2 * mag_chamfer + 0.02, h = mag_chamfer + 0.01, $fn = 64);
 }
 
 // =============== WEDGES (copied from device_monitor_case.scad) ===============
@@ -532,7 +515,7 @@ module tie_dummy() if (strap) color("black") at_inner()
   translate([strap_x - strap_w / 2, -wall - 0.5, 0.2]) cube([strap_w, out_w + 1, strap_h - 0.4]);
 // magnets, pressed to the bottom of their pockets
 module magnet_dummy() color("silver") at_inner() for (m = mag_xy)
-  translate([m[0], m[1], magnets == "inside" ? -mag_depth : -floor_t + mag_depth - mag_t]) cylinder(d = mag_d, h = mag_t, $fn = 64);
+  translate([m[0], m[1], -mag_depth]) cylinder(d = mag_d, h = mag_t, $fn = 64);
 module everything_else() { esp_dummy(); gy_dummy(); wires_dummy(); antenna_dummy(); cable_dummy(); tie_dummy(); magnet_dummy(); }
 
 // Everything above is laid out with the RESET side at low y. Looking down on the

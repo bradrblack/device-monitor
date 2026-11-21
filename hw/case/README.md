@@ -16,7 +16,7 @@ screws, and both clamp the accelerometer firmly so it feels the machine's vibrat
 | Vents | 2.6 mm holes: a grid in the lid, a row of 5 in each long wall | the same |
 | Status LED | through the reset tab's outline (thin lid) and the vents | the same |
 | Zip-tie slot | 4.8 mm | 5.5 mm |
-| Magnet mount | optional: 4 x 10 x 3 mm magnets, 1.8 mm taller ([below](#magnet-mount)) | no |
+| Magnet mount | optional: 4 x 10 x 3 mm magnets in the floor, 1.8 mm taller ([below](#magnet-mount)) | no |
 
 The two cases share the lid design: the snap closure, the reset tab, the vent holes,
 and the antenna recess are the same in both, and both lids have posts to wind the cable round. The slide-in case needs
@@ -125,49 +125,35 @@ through the slot under the module for a pipe. See [Mounting](#mounting) below.
 ### Magnet mount
 
 For freezers, dryers, AC units and anything else with a steel panel, the tray can
-hold four 10 mm x 3 mm neodymium disc magnets in its floor. Set `magnets` at the top
-of `slide_in_case.scad` (or print one of the ready STLs below). The floor grows from
-2 to 3.8 mm, so the case is **55.8 x 27.6 x 16.8 mm**: 1.8 mm taller, same footprint.
-The lid is unchanged, so use the normal `slide_lid.stl`.
+hold four 10 mm x 3 mm neodymium disc magnets in its floor. Print
+`slide_tray_magnets.stl` (or set `magnets = true` at the top of
+`slide_in_case.scad`) with the normal `slide_lid.stl`. The floor grows from 2 to
+3.8 mm, so the case is **55.8 x 27.6 x 16.8 mm**: 1.8 mm taller, same footprint.
 
-| `magnets =` | Print | Pockets | Glue |
-|---|---|---|---|
-| `"inside"` (recommended) | `slide_tray_magnets.stl` | open into the cavity, 0.6 mm of floor under each magnet: two on the centre line under the SuperMini, two across the far end behind the GY-346 | not needed |
-| `"bottom"` | `slide_tray_magnets_bottom.stl` | flush in the underside, 2 x 2, 8.5 mm from the ends, 13.6 mm apart across | needed |
-| `"none"` (default) | `slide_tray.stl` | none, 2 mm floor | |
+The pockets open into the cavity: two on the centre line under the SuperMini, two
+across the far end behind the GY-346, each with 0.6 mm of floor under it.
 
-`mag_d` sets the magnet diameter (default 10). `mag_d = 5` takes 5 x 3 mm magnets in
-the same four spots with the same 3.8 mm floor: `slide_tray_magnets_5mm.stl` is that
-tray with inside pockets. Small magnets lose more of their pull through the floor
-skin than big ones, so they hold well on a horizontal top but are marginal on a
-vertical panel that vibrates (a dryer's side); 10 x 3 is the safer choice.
+<img src="slide-magnets-pockets.png" alt="Magnet pockets in the printed tray" width="420"/> <img src="slide-magnets-section.png" alt="Section on the centre line: the two magnets under the SuperMini, 0.6 mm of floor below them" width="420"/>
+<img src="slide-magnets.png" alt="Magnets in the tray, alone and with the parts fitted" width="840"/>
 
-<img src="slide-magnets-pockets.png" alt="Inside pockets in the printed tray: 10 mm (left) and 5 mm (right)" width="840"/>
+**No glue needed.** The 0.6 mm floor skin sits between each magnet and the steel,
+so pulling the case off the steel lifts the skin, which lifts the magnet with it.
+Nothing can pull a magnet out. (Pockets in the underside would be the other way
+round: the magnet stays on the steel as the case comes away, so only glue would hold
+it, and a label over it won't.) The skin costs some grip, very roughly half of a
+bare magnet's pull, but four 10 x 3 mm magnets still hold far more than the
+monitor weighs, also on a vertical panel.
 
-<img src="slide-magnets.png" alt="Inside pockets: magnets alone, and with the parts fitted" width="840"/>
-<img src="slide-magnets-section.png" alt="Section on the centre line: the two magnets under the SuperMini, 0.6 mm of floor below them" width="420"/> <img src="slide-magnets-bottom.png" alt="Bottom pockets, seen from below" width="420"/>
-
-**Why "inside" needs no glue.** With the magnets in the floor from above, the
-0.6 mm floor skin sits between each magnet and the steel. Pulling the case off the
-steel lifts the skin, which lifts the magnet with it, so nothing can pull a magnet
-out. With `"bottom"` the opposite happens: the magnet wants to stay on the steel
-while the case comes away, so only glue holds it in. A QR label stuck over the
-bottom pockets won't hold them on its own; it tears or peels the first time the
-case is pulled off. The skin costs some grip (very roughly half of a bare magnet's
-pull), but four 10 x 3 mm magnets still hold far more than the monitor's weight,
-also on a vertical panel.
-
-**Fitting.** Pockets are the magnet plus 0.15 mm across (`mag_hole_d`, 10.15 mm for 10 mm magnets) and 3.2 mm deep, with a
+**Fitting.** Pockets are 10.15 mm across (`mag_hole_d`) and 3.2 mm deep, with a
 small lead-in round the mouth: a firm press fit for a 10.0 mm magnet on most
 printers. Press each one in with a flat non-magnetic tool (a pencil end) before the
 electronics go in; keep the other magnets well away, or they jump. Any pole up
-works. If a magnet is loose, a drop of CA glue fixes it; if they won't go in,
-set `mag_hole_d = mag_d + 0.3`. The magnets end 0.2 mm below the surface, so nothing
-stands proud and the bottom stays flat for the QR label (it goes on as usual and
-covers the pockets on `"bottom"`). The zip-tie slot still works with either option.
+works. If a magnet is loose, a drop of CA glue fixes it; if they won't go in, set
+`mag_hole_d = 10.3`. The magnets end 0.2 mm below the floor's top, so nothing stands
+proud under the parts. The bottom of the case stays solid and flat for the QR label,
+and the zip-tie slot still works.
 
-**Printing.** As the plain tray, floor down. The `"bottom"` pockets' roofs are
-10 mm bridges, 0.6 mm thick: fine on most printers, but look at them before fitting.
+**Printing.** As the plain tray, floor down, no supports.
 
 **Wi-Fi near steel.** A steel panel under the case reflects and detunes the
 antenna. The ribbon antenna is on the lid ceiling, the part of the case furthest
@@ -186,10 +172,8 @@ LED glow through the thin lid and the tab's outline. To re-export after a change
 ./check_case.sh slide_in_case.scad      # each line must say ok
 openscad --export-format binstl -o slide_tray.stl -D 'part="tray"' slide_in_case.scad
 openscad --export-format binstl -o slide_lid.stl  -D 'part="lid"'  slide_in_case.scad
-# magnet trays: also run the checks with CASE_DEFS='-D magnets="inside"' (and "bottom")
-openscad --export-format binstl -o slide_tray_magnets.stl        -D 'part="tray"' -D 'magnets="inside"' slide_in_case.scad
-openscad --export-format binstl -o slide_tray_magnets_bottom.stl -D 'part="tray"' -D 'magnets="bottom"' slide_in_case.scad
-openscad --export-format binstl -o slide_tray_magnets_5mm.stl    -D 'part="tray"' -D 'magnets="inside"' -D mag_d=5 slide_in_case.scad
+# magnet tray: also run CASE_DEFS="-D magnets=true" ./check_case.sh slide_in_case.scad
+openscad --export-format binstl -o slide_tray_magnets.stl -D 'part="tray"' -D magnets=true slide_in_case.scad
 ```
 
 ## PCB case
