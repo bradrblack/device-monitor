@@ -111,8 +111,8 @@ cleat_z0 = 4;                // posts' lower end above the floor
 //              pulling the case off the steel pulls each magnet out of its pocket,
 //              so they must be glued (the QR label over them alone won't hold them).
 magnets = "none";
-mag_d = 10; mag_t = 3;       // the magnet
-mag_hole_d = 10.15;          // press fit on a typical 0.4 mm nozzle; 10.3 if you'd rather glue them loose
+mag_d = 10; mag_t = 3;       // the magnet (5 x 3 also fits: same floor, smaller pockets in the same spots)
+mag_hole_d = mag_d + 0.15;   // press fit on a typical 0.4 mm nozzle; mag_d + 0.3 if you'd rather glue them loose
 mag_depth = mag_t + 0.2;     // magnet ends 0.2 below the surface: never proud, room for a drop of glue
 mag_skin = 0.6;              // floor left over each pocket (3 layers at 0.2)
 mag_chamfer = 0.4;           // lead-in round the pocket mouth (also eats the elephant's foot on "bottom")
@@ -235,11 +235,12 @@ out_l = in_l + 2 * wall; out_w = in_w + 2 * wall;
 mag_web = 0.7;               // plastic left between a pocket and its neighbours
 mag_xy =
   magnets == "inside" ? concat(
-    // on the centre line under the SuperMini, between its side ledges
-    [for (s = [-1, 1]) [esp_x1 / 2 + s * (mag_hole_d + mag_web) / 2, in_w / 2]],
-    // across the case behind the GY-346's pin bosses, under the cable posts. The
-    // gap there is only 11 mm, so they run 0.5 mm under the end wall (solid floor below).
-    [for (s = [-1, 1]) [in_l + 0.5 - mag_hole_d / 2 - mag_chamfer, in_w / 2 + s * (mag_hole_d + mag_web) / 2]])
+    // on the centre line under the SuperMini, between its side ledges, as far apart as it allows
+    [for (x = [mag_hole_d / 2 + mag_chamfer, esp_x1 - mag_hole_d / 2 - mag_chamfer - 0.3]) [x, in_w / 2]],
+    // across the case behind the GY-346's pin bosses, under the cable posts, spread
+    // toward the long walls. The gap there is only 11 mm, so 10 mm pockets run
+    // 0.5 mm under the end wall (solid floor below).
+    [for (s = [-1, 1]) [in_l + 0.5 - mag_hole_d / 2 - mag_chamfer, in_w / 2 + s * (in_w / 2 - mag_hole_d / 2 - mag_chamfer - 0.6)]])
   : magnets == "bottom" ? [for (x = [mag_edge, out_l - mag_edge], s = [-1, 1]) [x - wall, in_w / 2 + s * mag_pitch_y / 2]]
   : [];
 
@@ -255,6 +256,8 @@ assert(magnets == "none" || magnets == "inside" || magnets == "bottom", "magnets
 if (magnets == "inside") {
   r = mag_hole_d / 2 + mag_chamfer;
   assert(mag_xy[0][0] - r >= 0, "front magnet pocket runs under the end wall");
+  assert(mag_xy[1][0] - mag_xy[0][0] >= mag_hole_d + mag_web, "SuperMini magnet pockets overlap");
+  assert(mag_xy[3][1] - mag_xy[2][1] >= mag_hole_d + mag_web, "rear magnet pockets overlap");
   assert(mag_xy[1][0] + r <= esp_x1, "rear SuperMini magnet pocket runs past the board");
   assert(in_w / 2 + r <= esp_y1 - ledge_in - 0.4, "SuperMini magnet pockets cut the side ledges");
   for (m = [mag_xy[2], mag_xy[3]], h = gy_holes) assert(norm(m - h) >= (gy_hole_d + 2) / 2 + r + 0.3, "rear magnet pockets cut the pin bosses");

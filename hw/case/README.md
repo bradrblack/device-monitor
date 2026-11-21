@@ -136,6 +136,14 @@ The lid is unchanged, so use the normal `slide_lid.stl`.
 | `"bottom"` | `slide_tray_magnets_bottom.stl` | flush in the underside, 2 x 2, 8.5 mm from the ends, 13.6 mm apart across | needed |
 | `"none"` (default) | `slide_tray.stl` | none, 2 mm floor | |
 
+`mag_d` sets the magnet diameter (default 10). `mag_d = 5` takes 5 x 3 mm magnets in
+the same four spots with the same 3.8 mm floor: `slide_tray_magnets_5mm.stl` is that
+tray with inside pockets. Small magnets lose more of their pull through the floor
+skin than big ones, so they hold well on a horizontal top but are marginal on a
+vertical panel that vibrates (a dryer's side); 10 x 3 is the safer choice.
+
+<img src="slide-magnets-pockets.png" alt="Inside pockets in the printed tray: 10 mm (left) and 5 mm (right)" width="840"/>
+
 <img src="slide-magnets.png" alt="Inside pockets: magnets alone, and with the parts fitted" width="840"/>
 <img src="slide-magnets-section.png" alt="Section on the centre line: the two magnets under the SuperMini, 0.6 mm of floor below them" width="420"/> <img src="slide-magnets-bottom.png" alt="Bottom pockets, seen from below" width="420"/>
 
@@ -149,12 +157,12 @@ case is pulled off. The skin costs some grip (very roughly half of a bare magnet
 pull), but four 10 x 3 mm magnets still hold far more than the monitor's weight,
 also on a vertical panel.
 
-**Fitting.** Pockets are 10.15 mm across (`mag_hole_d`) and 3.2 mm deep, with a
+**Fitting.** Pockets are the magnet plus 0.15 mm across (`mag_hole_d`, 10.15 mm for 10 mm magnets) and 3.2 mm deep, with a
 small lead-in round the mouth: a firm press fit for a 10.0 mm magnet on most
 printers. Press each one in with a flat non-magnetic tool (a pencil end) before the
 electronics go in; keep the other magnets well away, or they jump. Any pole up
 works. If a magnet is loose, a drop of CA glue fixes it; if they won't go in,
-set `mag_hole_d = 10.3`. The magnets end 0.2 mm below the surface, so nothing
+set `mag_hole_d = mag_d + 0.3`. The magnets end 0.2 mm below the surface, so nothing
 stands proud and the bottom stays flat for the QR label (it goes on as usual and
 covers the pockets on `"bottom"`). The zip-tie slot still works with either option.
 
@@ -181,6 +189,7 @@ openscad --export-format binstl -o slide_lid.stl  -D 'part="lid"'  slide_in_case
 # magnet trays: also run the checks with CASE_DEFS='-D magnets="inside"' (and "bottom")
 openscad --export-format binstl -o slide_tray_magnets.stl        -D 'part="tray"' -D 'magnets="inside"' slide_in_case.scad
 openscad --export-format binstl -o slide_tray_magnets_bottom.stl -D 'part="tray"' -D 'magnets="bottom"' slide_in_case.scad
+openscad --export-format binstl -o slide_tray_magnets_5mm.stl    -D 'part="tray"' -D 'magnets="inside"' -D mag_d=5 slide_in_case.scad
 ```
 
 ## PCB case
