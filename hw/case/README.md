@@ -168,6 +168,14 @@ Mount it on the outside of the cabinet, lid facing out, and not behind a steel d
 or inside a metal housing. If the signal reading on the web page drops a lot after
 mounting, try a spot near the cabinet's edge or a side panel facing the router.
 
+### Status LED
+
+The SuperMini's RGB LED sits 13.9 mm from the USB end and 3.7 mm from the RESET
+edge, right under the edge of the reset tab's slot. Print the lid in translucent
+(natural) PLA and it glows through the slot and the lid. Over the LED the lid is
+thinned from inside to 0.6 mm (`led_window`, stopping short of the slot so the
+tab's tongue keeps its thickness), so the LED shows as a brighter spot.
+
 ### Printing
 
 Print `slide_tray.stl` floor down and `slide_lid.stl` as exported (ceiling on the

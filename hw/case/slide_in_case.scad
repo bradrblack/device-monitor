@@ -60,6 +60,9 @@ usb_port_w = usb_w + 1;
 // RESET (not BOOT: the firmware's double-press reopens the Wi-Fi portal). On the
 // SuperMini it is 9 mm from the USB end and 5 mm from one long edge (measured on sm2k).
 btn_from_front = 8.8; btn_from_edge = 5.9;   // centre, Brad's micrometer 2026-11-22 (was 9 / 5 from the sm2k board)
+// RGB status LED (Brad, 2026-11-22): centre 13.9 mm from the USB end, 3.7 mm from the
+// same long edge as RESET, so it sits under the edge of the reset tab's slot.
+led_from_front = 13.9; led_from_edge = 3.7;
 btn_top = 2;                 // button top above the board
 esp_parts_h = 1.6;           // chip and LDO above the board
 // Pads used (from the USB end): 1st-3rd on each edge, 2.36 + 2.54 n from the front,
@@ -198,6 +201,12 @@ vent_chamfer = 0.4;          // countersink on the top face, for the same reason
 vents_over_antenna = true;   // drill the grid over the antenna too (Brad: looks, and it shows the antenna)
 led_row = false;             // row of 2 mm holes over the SuperMini's LED edge (off: Brad, 2026-11-15)
 led_hole_d = 2.0; led_pitch = 3;
+// LED window: the lid thinned from inside over the LED, for a translucent lid
+// (it glows through the thin spot and the tab's slot). It stops short of the
+// slot so the flexing tongue keeps its full thickness.
+led_window = true;
+led_win_d = 4;
+led_win_skin = 0.6;          // lid left over it (3 layers)
 vent_margin = 0.8;           // web left round the tab, posts and feet
 vent_shift = 0.7;            // grid moved this far from the RESET side: centred, the middle row
                              // over the SuperMini came within 0.6 mm of the tab's cut and was dropped
@@ -223,6 +232,8 @@ lip_x0 = pad_zone; lip_x1 = min(in_l - esp_l - 0.5, esp_x1 - 3.5);
 usb_y = (esp_y0 + esp_y1) / 2;
 usb_z0 = esp_top - usb_margin; usb_z1 = esp_top + usb_h + usb_margin;
 btn_xy = [esp_x0 + btn_from_front, esp_y0 + btn_from_edge];
+led_xy = [esp_x0 + led_from_front, esp_y0 + led_from_edge];
+led_win_y1 = btn_xy[1] - tab_w / 2 - tab_slot - 0.4;   // window's edge toward the slot
 plunger_z0 = esp_top + btn_top + btn_gap;
 sk_in0 = skirt_gap + skirt_t; sk_in1 = in_w - skirt_gap - skirt_t;   // skirts' inner faces
 ant_y0 = btn_xy[1] + tab_pad_d / 2 + tab_slot + 0.3; ant_y1 = ant_y0 + ant_w;
@@ -435,6 +446,11 @@ module lid() {
         translate([root_x - 0.01, btn_xy[1] - tab_w / 2, in_h - 0.01]) cube([0.01, tab_w, 0.01]);
       }
     }
+    // LED window
+    if (led_window) at_inner() intersection() {
+      translate([led_xy[0], led_xy[1], in_h - 0.01]) cylinder(d = led_win_d, h = lid_t - led_win_skin + 0.01, $fn = 32);
+      box([led_xy[0] - led_win_d, sk_in0 + 0.3, in_h - 1], [led_xy[0] + led_win_d, led_win_y1, in_h + lid_t]);
+    }
     // antenna outline: a 0.2 mm recess in the ceiling to stick it into
     if (antenna) at_inner() box([ant_x0 - 0.3, ant_y0 - 0.1, in_h - 0.01], [ant_x0 + ant_l + 0.3, ant_y1 + 0.1, in_h + 0.2]);
     vents();
@@ -468,6 +484,7 @@ module vents() at_inner() {
     [fx0, 0, fx1, gy_holes[0][1] + foot_w / 2], [fx0, gy_holes[1][1] - foot_w / 2, fx1, in_w],
     for (c = cleat_xy) [c[0] - cleat_d / 2, c[1] - cleat_d / 2, c[0] + cleat_d / 2, c[1] + cleat_d / 2],
     if (led_row) [esp_x0, led_y - led_hole_d / 2, esp_x1, led_y + led_hole_d / 2],
+    if (led_window) [led_xy[0] - led_win_d / 2, led_xy[1] - led_win_d / 2, led_xy[0] + led_win_d / 2, led_win_y1],
     if (antenna && !vents_over_antenna) [ant_x0 - 0.3, ant_y0 - 0.1, ant_x0 + ant_l + 0.3, ant_y1 + 0.1]];
   rows = floor((sk_in1 - sk_in0 - 2 * m) / vent_row) + 1;
   y0 = (in_w - (rows - 1) * vent_row) / 2 + vent_shift;
