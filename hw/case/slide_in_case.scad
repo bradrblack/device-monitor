@@ -124,8 +124,6 @@ in_h = 11;                   // cavity height: USB-C top is ~7.4, plus room to b
 
 // SuperMini support
 esp_z = 3.2;                 // board underside above the floor (clears rails and tails)
-esp_shift = 1.05;            // board moved this far off centre toward the RESET side, so RESET (5.9 in
-                             // from the edge on Brad's board) stays where the antenna strip leaves room
 ledge_in = 0.8;              // ledges reach this far under the board's long edges (pad tails start 0.88 in)
 guide_gap = 0.3;             // board edge to the side guides
 lip_in = 0.6;                // lip reach over the board (rear part only, clear of the used pads)
@@ -170,6 +168,12 @@ tab_slot = 0.6;              // cut around it
 tab_chamfer = 0.5;           // the cut widens to tab_slot + 2 x this at the lid's top face, so the
                              // first layers (squashed on the bed: the lid prints top down) don't close it
 plunger_d = 2.4;
+// With the board centred, RESET (5.9 in from the edge) is 1.05 mm further toward
+// the antenna side than the tab can go: the antenna strip needs its 11 mm between
+// the tab's slot and the skirt. So the tab sits as close to the button as that
+// allows, and the plunger is set off-centre under its round end, toward the button
+// (kept 0.1 inside the round end so it prints on the tongue, not over the slot).
+// Net: plunger centre about 0.55 mm off the button's centre, on a 3 x 3.5 button.
 btn_gap = 0.5;               // plunger tip above the button at rest
 
 // Skirts, wedges and divots (as device_monitor_case.scad / sump-master-2000)
@@ -218,7 +222,7 @@ vent_shift = 0.7;            // grid moved this far from the RESET side: centred
 
 // ======================= DERIVED =======================
 esp_x0 = front_gap; esp_x1 = esp_x0 + esp_l;
-esp_y0 = (in_w - esp_w) / 2 - esp_shift; esp_y1 = esp_y0 + esp_w;
+esp_y0 = (in_w - esp_w) / 2; esp_y1 = esp_y0 + esp_w;   // on the centre line, USB-C too
 esp_top = esp_z + esp_t;
 guide_top = esp_top + lip_gap + lip_t;
 post_x0 = esp_x1 + post_gap; post_x1 = post_x0 + post_d;
@@ -238,10 +242,13 @@ usb_y = (esp_y0 + esp_y1) / 2;
 usb_z0 = esp_top - usb_margin; usb_z1 = esp_top + usb_h + usb_margin;
 btn_xy = [esp_x0 + btn_from_front, esp_y0 + btn_from_edge];
 led_xy = [esp_x0 + led_from_front, esp_y0 + led_from_edge];
-led_win_y1 = btn_xy[1] - tab_w / 2 - tab_slot - 0.4;   // window's edge toward the slot
-plunger_z0 = esp_top + btn_top + btn_gap;
 sk_in0 = skirt_gap + skirt_t; sk_in1 = in_w - skirt_gap - skirt_t;   // skirts' inner faces
-ant_y0 = btn_xy[1] + tab_pad_d / 2 + tab_slot + 0.3; ant_y1 = ant_y0 + ant_w;
+tab_y_max = sk_in1 - 0.3 - ant_w - 0.3 - tab_slot - tab_pad_d / 2;   // furthest the antenna strip lets the tab go
+tab_xy = [btn_xy[0], min(btn_xy[1], tab_y_max)];
+plunger_xy = [btn_xy[0], tab_xy[1] + min(btn_xy[1] - tab_xy[1], tab_pad_d / 2 - plunger_d / 2 - 0.1)];
+led_win_y1 = tab_xy[1] - tab_w / 2 - tab_slot - 0.4;   // window's edge toward the slot
+plunger_z0 = esp_top + btn_top + btn_gap;
+ant_y0 = tab_xy[1] + tab_pad_d / 2 + tab_slot + 0.3; ant_y1 = ant_y0 + ant_w;
 snap_x = [6, cable_posts ? cleat_x - 0.5 : post_x1 + 5];
 sv_z = in_h - sv_drop;
 fx0 = gy_holes[0][0] - foot_fwd; fx1 = gy_holes[0][0] + foot_back;     // lid feet, along x
@@ -263,6 +270,7 @@ mag_xy =
     [for (s = [-1, 1]) [in_l + 0.5 - mag_hole_d / 2 - mag_chamfer, in_w / 2 + s * (in_w / 2 - mag_hole_d / 2 - mag_chamfer - 0.6)]])
   : [];
 
+echo(str("reset: plunger ", plunger_xy[1] - btn_xy[1], " mm off the button (tab ", tab_xy[1] - btn_xy[1], ")"));
 echo(str("slide-in case outside ", out_l, " x ", out_w, " x ", floor_t + in_h + lid_t,
          " mm; cavity ", in_l, " x ", in_w, " x ", in_h));
 assert(lip_x1 - lip_x0 >= 4, "no room for the lip: the case is too short to slide the board in");
@@ -448,8 +456,8 @@ module lid() {
         translate([0, -50]) square([root_x - tab_ramp, 100]);
       }
       hull() {
-        translate([root_x - tab_ramp - 0.01, btn_xy[1] - tab_w / 2, in_h - 0.01]) cube([0.01, tab_w, thin + 0.01]);
-        translate([root_x - 0.01, btn_xy[1] - tab_w / 2, in_h - 0.01]) cube([0.01, tab_w, 0.01]);
+        translate([root_x - tab_ramp - 0.01, tab_xy[1] - tab_w / 2, in_h - 0.01]) cube([0.01, tab_w, thin + 0.01]);
+        translate([root_x - 0.01, tab_xy[1] - tab_w / 2, in_h - 0.01]) cube([0.01, tab_w, 0.01]);
       }
     }
     // LED window
@@ -461,20 +469,20 @@ module lid() {
     if (antenna) at_inner() box([ant_x0 - 0.3, ant_y0 - 0.1, in_h - 0.01], [ant_x0 + ant_l + 0.3, ant_y1 + 0.1, in_h + 0.2]);
     vents();
   }
-  // plunger under the tab's round end
-  at_inner() translate([btn_xy[0], btn_xy[1], plunger_z0]) cylinder(d = plunger_d, h = in_h + lid_t - tab_t - plunger_z0 + 0.01);
+  // plunger under the tab's round end, set toward the button
+  at_inner() translate([plunger_xy[0], plunger_xy[1], plunger_z0]) cylinder(d = plunger_d, h = in_h + lid_t - tab_t - plunger_z0 + 0.01);
 }
 module tab_slot_2d() {
   root_x = btn_xy[0] + tab_len;
   difference() {
     offset(delta = tab_slot) tab_outline();
     tab_outline();
-    translate([root_x, btn_xy[1] - tab_w / 2 - tab_slot - 1]) square([tab_slot + 1, tab_w + 2 * tab_slot + 2]);
+    translate([root_x, tab_xy[1] - tab_w / 2 - tab_slot - 1]) square([tab_slot + 1, tab_w + 2 * tab_slot + 2]);
   }
 }
 module tab_outline() {
-  translate(btn_xy) circle(d = tab_pad_d);
-  translate([btn_xy[0], btn_xy[1] - tab_w / 2]) square([tab_len, tab_w]);
+  translate(tab_xy) circle(d = tab_pad_d);
+  translate([tab_xy[0], tab_xy[1] - tab_w / 2]) square([tab_len, tab_w]);
 }
 
 // Vent holes: a square grid over the lid, kept clear of the reset tab, the roots
@@ -484,7 +492,7 @@ module vents() at_inner() {
   m = vent_margin + vent_hole_d / 2;
   led_y = sk_in0 + 0.7 + led_hole_d / 2;
   keep_out = [
-    [btn_xy[0] - tab_pad_d / 2 - tab_slot, btn_xy[1] - tab_pad_d / 2 - tab_slot, btn_xy[0] + tab_len + tab_slot, btn_xy[1] + tab_pad_d / 2 + tab_slot],
+    [tab_xy[0] - tab_pad_d / 2 - tab_slot, tab_xy[1] - tab_pad_d / 2 - tab_slot, tab_xy[0] + tab_len + tab_slot, tab_xy[1] + tab_pad_d / 2 + tab_slot],
     // posts and feet, including the corbels that step out under the antenna strip
     [post_x0, 0, post_x1, esp_y0 + post_over], [post_x0, esp_y1 - post_over, post_x1, in_w],
     [fx0, 0, fx1, gy_holes[0][1] + foot_w / 2], [fx0, gy_holes[1][1] - foot_w / 2, fx1, in_w],
@@ -510,7 +518,7 @@ module vents() at_inner() {
   }
   // LED row: smaller holes along the SuperMini's RESET-side edge, where the LED is,
   // between the skirt and the reset tab.
-  if (led_row) assert(led_y + led_hole_d / 2 + 0.7 <= btn_xy[1] - tab_pad_d / 2 - tab_slot - tab_chamfer, "LED row hits the reset tab");
+  if (led_row) assert(led_y + led_hole_d / 2 + 0.7 <= tab_xy[1] - tab_pad_d / 2 - tab_slot - tab_chamfer, "LED row hits the reset tab");
   if (led_row) for (x = [esp_x0 + 1.5 : led_pitch : esp_x1 - 1]) translate([x, led_y, in_h - 1]) cylinder(d = led_hole_d, h = lid_t + 2, $fn = 20);
 }
 

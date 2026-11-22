@@ -94,6 +94,13 @@ wire each (26-30 AWG).
   plunger under its round end. It sits over RESET as on the carrier: 9 mm from the USB
   end, on the far side when you look down with the USB-C pointing left. Press the tab to reset; a double press reopens the Wi-Fi
   portal. BOOT has no tab, since flashing over USB doesn't need it.
+  The SuperMini and its USB-C sit on the case's centre line. That puts RESET 1.05 mm
+  further toward the antenna than the tab can go (the 11 mm antenna strip needs the
+  room), so the tab sits as close as it can and the plunger is set off-centre under
+  its round end, toward the button: about 0.55 mm off the button's centre on a
+  3 x 3.5 mm button. The scad echoes both offsets when it renders.
+
+<img src="slide-reset.png" alt="From above: SuperMini centred, the plunger (red) on RESET, the tab's cut in black" width="420"/>
 - The lid has a grid of 2.6 mm vent holes (one block over the SuperMini, one over the
   module), kept clear of the reset tab and the post and foot roots; the antenna shows
   through the middle rows (`vents_over_antenna = false` drops those). The tab's cut
@@ -175,7 +182,7 @@ mounting, try a spot near the cabinet's edge or a side panel facing the router.
 ### Status LED
 
 The SuperMini's RGB LED sits 13.9 mm from the USB end and 3.7 mm from the RESET
-edge, right under the edge of the reset tab's slot. Print the lid in translucent
+edge, just under the tongue beside the reset tab's slot. Print the lid in translucent
 (natural) PLA and it glows through the slot and the lid. Over the LED the lid is
 thinned from inside to 0.6 mm (`led_window`, stopping short of the slot so the
 tab's tongue keeps its thickness), so the LED shows as a brighter spot.
