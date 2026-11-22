@@ -122,6 +122,11 @@ Print in PLA or PETG with no supports; a light-coloured lid lets the status LED
 show through. Wiring, assembly, the measurements to check before printing and how
 to change either case are in **[hw/case/README.md](hw/case/README.md)**.
 
+For the bottom of the case there is a printable 50 x 24 mm QR label. Scanning it
+joins the board's setup network, and the setup page opens by itself. Each board
+gets its own label, made with `hw/label/make_label.py`; see
+**[hw/label/README.md](hw/label/README.md)**.
+
 **Mounting:** the box must move with the machine. Strap or glue it to the motor
 housing, the pump's discharge pipe or a rigid panel, not to something that damps
 vibration (a hose, foam, a wobbly cover). A cable tie that's tight on a pipe works
