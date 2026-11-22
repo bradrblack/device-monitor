@@ -30,6 +30,13 @@ button{padding:9px 16px;font:inherit;font-weight:600;border-radius:6px;border:1p
 button.go{background:var(--run);border-color:var(--run);color:#fff}button:disabled{opacity:.5}
 pre{margin:0;max-height:260px;overflow:auto;font:12px/1.35 ui-monospace,Menlo,monospace;white-space:pre-wrap;word-break:break-word}
 .note{font-size:13px;color:var(--dim);margin:8px 0 0}.msg{color:var(--ok);font-weight:600;margin:0 0 8px}
+/* "Show more settings": a divider that opens the cards below the chart (same look as the QRK Board page) */
+.more-btn{display:flex;align-items:center;gap:12px;width:100%;height:44px;margin:0 0 12px;padding:0;background:none;border:0;border-radius:0;color:var(--dim);font:inherit;font-size:14px;font-weight:400;cursor:pointer}
+.more-btn::before,.more-btn::after{content:'';flex:1;height:1px;background:var(--line)}
+.more-btn i{display:block;width:7px;height:7px;margin:-3px 0 0 -4px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);transition:transform .15s}
+.more-btn.open i{transform:rotate(-135deg);margin-top:3px}
+.more-btn:hover,.more-btn:focus-visible{color:var(--run)}
+.more-btn:focus-visible{outline:2px solid var(--run);outline-offset:-2px;border-radius:8px}
 ol{margin:0;padding-left:20px}ol li{margin-bottom:10px}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px}
 </style></head><body><main>
 <div class="top"><div><h1 id="title">Device Monitor</h1><div class="sub" id="sub">connecting&hellip;</div></div><div><span class="badge" id="state">&hellip;</span></div></div>
@@ -42,6 +49,9 @@ ol{margin:0;padding-left:20px}ol li{margin-bottom:10px}.row{display:flex;gap:8px
 </div>
 <div class="card"><h2>Vibration, last few minutes</h2><canvas id="chart"></canvas>
 <p class="note">Solid line: start threshold. Dashed line: stop threshold. The chart starts when this page is opened.</p></div>
+
+<button type="button" class="more-btn" id="morebtn" aria-controls="more" aria-expanded="false"><span>Show more settings</span><i></i></button>
+<div id="more" hidden>
 
 <div class="card"><h2>Calibrate</h2><ol>
 <li>With the machine <b>off</b> (and the house as busy as it normally gets), measure the idle vibration.
@@ -113,11 +123,19 @@ ol{margin:0;padding-left:20px}ol li{margin-bottom:10px}.row{display:flex;gap:8px
 <button type="submit">Restart</button></div></form><p class="note">A new firmware runs as a trial and rolls back by itself if it isn't healthy within 10 minutes. You can also open the Wi-Fi setup portal by pressing the RESET button twice, about a second apart (through the hole in the lid).</p></div>
 
 <div class="card"><h2>Log</h2><pre id="log"></pre></div>
+</div>
 </main><script>
 const $=id=>document.getElementById(id),f=(v,d)=>v==null?'–':(+v).toFixed(d);
 let hist=[],cfg=null,seq=0,filled=false,sug=null;
 const q=new URLSearchParams(location.search),msgs={saved:'Detection settings saved.',reset:'Detection settings reset to the firmware defaults.',conn:'Connections saved.',dev:'Device saved.',login:'Logged in.',test:'Test sent; check ntfy, InfluxDB and Home Assistant.'};
-for(const k in msgs)if(q.has(k))$('flash').innerHTML='<p class="msg">'+msgs[k]+'</p>';
+// Calibration, settings, connections, maintenance and the log sit behind one
+// "Show more settings" divider. It starts closed, and opens by itself after a save
+// or log-in (so the saved card is in view) and while a calibration is measuring.
+const more=$('more'),moreBtn=$('morebtn');
+function showMore(o){more.hidden=!o;moreBtn.setAttribute('aria-expanded',o);moreBtn.classList.toggle('open',o);
+moreBtn.firstChild.textContent=(o?'Hide':'Show')+' more settings';if(o){const p=$('log');p.scrollTop=p.scrollHeight;}}
+moreBtn.onclick=()=>showMore(more.hidden);
+for(const k in msgs)if(q.has(k)){$('flash').innerHTML='<p class="msg">'+msgs[k]+'</p>';showMore(true);}
 // Log in (GET /login) before any save: Safari hangs on a password challenge to a form POST.
 const loggedIn=document.cookie.split('; ').includes('dm_login=1');
 if(loggedIn)$('loginbar').style.display='none';
@@ -155,7 +173,7 @@ $('cycles').textContent=s.cycles+' run'+(s.cycles==1?'':'s');
 $('wifi').textContent=dur(s.total_run_s)+' running · Wi-Fi '+s.rssi+' dBm'+(s.iq?' · '+s.iq+' queued':'');
 $('idle').textContent=s.idle.n?'average '+f(s.idle.avg,3)+' · peak '+f(s.idle.max,3):'no readings yet';
 if(s.last_run.n)$('lastrun').textContent='average '+f(s.last_run.avg,3)+' · lowest '+f(s.last_run.min,3)+' · '+dur(s.last_run.seconds);
-const c=s.cal,busy=c.phase>0;
+const c=s.cal,busy=c.phase>0;if(busy&&more.hidden&&!status.opened){status.opened=1;showMore(true);}
 document.querySelectorAll('.cal').forEach(e=>{const mine=(e.dataset.p=='idle'?1:2)==c.phase;e.textContent=mine?'Stop':(e.dataset.p=='idle'?'Measure idle (30 s)':'Measure running (30 s)');e.disabled=busy&&!mine;e.dataset.stop=mine?1:'';});
 $('calidle').textContent=c.phase==1?'measuring… '+c.left_s+' s left':c.idle.n?'average '+f(c.idle.avg,3)+' · peak '+f(c.idle.max,3):'not measured';
 $('calrun').textContent=c.phase==2?'measuring… '+c.left_s+' s left':c.run.n?'average '+f(c.run.avg,3)+' · lowest '+f(c.run.min,3):'not measured';
