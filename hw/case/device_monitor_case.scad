@@ -17,8 +17,8 @@
 //     antenna stuck flat under the lid.
 // The carrier is the sump-master-2000 carrier cut down to the ESP32-C3 SuperMini
 // and the GY-346 (ADXL346) module. By default the optional bulk capacitor C1 is
-// not fitted and the case is low (17 mm). Set cap_fitted = true for a board with
-// C1: the case grows to 23 mm (tray_cap.stl / lid_cap.stl).
+// not fitted and the case is low (19 mm). Set cap_fitted = true for a board with
+// C1: the case grows to 25 mm (tray_cap.stl / lid_cap.stl).
 //
 // Antenna and cable: the antenna sticks under the lid beside the reset tab. Its
 // cable (about 120 mm) is wound three times round the fat post at the far end of
@@ -147,7 +147,11 @@ floor_t  = !magnets ? 2 : mag_skin + mag_depth;
 lid_t    = 2;
 corner_r = 2;
 fit      = 0.2;              // general FDM clearance
-standoff_h = 3;              // floor to the board's underside (solder tails)
+// Header pins below the carrier, solder included: Brad measured 4.3 mm on the ESP32
+// rows (2026-11-22; 1.5 was assumed before). The J1 row is taken as the same. The
+// standoffs leave 0.7 mm under them, so nothing needs trimming.
+tail_len = 4.3;
+standoff_h = tail_len + 0.7; // floor to the board's underside
 pcb_x0   = 0.3;              // USB wall's inner face to the board's edge (fan case: near_end_clearance)
 side_gap = 1.5;              // board's long edges to the tray walls
 end_gap  = 1.0;              // board's far edge to the far wall
@@ -478,9 +482,9 @@ module parts_dummies() at_inner() {
 }
 // Solder tails under the board (ESP + J1 header pins): what the floor and strap must clear.
 module tails_dummies() at_inner() color("gold") {
-  for (ky = [esp_xy[1] - 7.62, esp_xy[1] + 7.62]) kbox([esp_xy[0] - 10.16, ky - 0.5], [esp_xy[0] + 10.16, ky + 0.5], -pcb_t - 1.5, -pcb_t);
-  kbox([j1_xy[0] - 0.5, j1_xy[1] - 0.5], [j1_xy[0] + 0.5, j1_xy[1] + 7 * 2.54 + 0.5], -pcb_t - 1.5, -pcb_t);
-  if (cap_fitted) for (dx = [-1.25, 1.25]) kbox([cap_xy[0] + dx - 0.5, cap_xy[1] - 0.5], [cap_xy[0] + dx + 0.5, cap_xy[1] + 0.5], -pcb_t - 1.5, -pcb_t);
+  for (ky = [esp_xy[1] - 7.62, esp_xy[1] + 7.62]) kbox([esp_xy[0] - 10.16, ky - 0.5], [esp_xy[0] + 10.16, ky + 0.5], -pcb_t - tail_len, -pcb_t);
+  kbox([j1_xy[0] - 0.5, j1_xy[1] - 0.5], [j1_xy[0] + 0.5, j1_xy[1] + 7 * 2.54 + 0.5], -pcb_t - tail_len, -pcb_t);
+  if (cap_fitted) for (dx = [-1.25, 1.25]) kbox([cap_xy[0] + dx - 0.5, cap_xy[1] - 0.5], [cap_xy[0] + dx + 0.5, cap_xy[1] + 0.5], -pcb_t - tail_len, -pcb_t);
 }
 module tie_dummy() if (strap) color("black")
   translate([wall + bxy([strap_kicad_x, 0])[0] - strap_w / 2, -0.5, floor_t + 0.2]) cube([strap_w, out_w + 1, strap_h - 0.4]);
