@@ -18,6 +18,10 @@ screws, and both clamp the accelerometer firmly so it feels the machine's vibrat
 | Zip-tie slot | 4.8 mm | 5.5 mm |
 | Magnet mount | optional: 4 x 10 x 3 mm magnets in the floor, 1.8 mm taller ([below](#magnet-mount)) | the same ([PCB case magnets](#magnet-mount-1)) |
 
+Both trays have a pry slot: an 8 mm wide, 1.2 mm deep notch in the top of the end
+wall opposite the USB-C port. Put a small flat screwdriver in it, under the lid's
+edge, and twist to pop the lid off (`pry_slot = false` to leave it out).
+
 The two cases share the lid design: the snap closure, the reset tab, the vent holes,
 and the antenna recess are the same in both, and both lids have posts to wind the cable round. The slide-in case needs
 no PCB order, only four short wires. The PCB case needs no wiring at all: the modules

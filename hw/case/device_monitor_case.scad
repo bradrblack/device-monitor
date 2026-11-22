@@ -183,6 +183,11 @@ cleat_flare = 0.8;
 // One zip tie in through a side wall at floor level, across the floor under the
 // GY-346 (board x 33-39 has no solder tails) and out the other side, e.g. round
 // a pipe. Set strap = false for a plain case (stick it on with VHB tape).
+// Pry slot: a notch in the top of the tray's end wall opposite the USB-C port, so a
+// small flat screwdriver can go under the lid's edge there and lever it off.
+pry_slot = true;
+pry_w = 8;                   // across the case
+pry_d = 1.2;                 // down from the wall's top
 strap = true;
 strap_kicad_x = 35.5;         // between J1's tails (x 28.1) and C1's leads / H2's boss (x 42.8+); jumpers at 30.85-32.15 are flat
 strap_w = 5.5; strap_h = 2;
@@ -269,6 +274,7 @@ module tray() {
     // USB end: a low stub wall below the port; the lid's end wall drops onto it
     translate([-1, -1, floor_t + stub_h]) cube([wall + fit + 1, out_w + 2, 50]);
     usb_port_cutter(wall + 2);       // lower half of the port
+    if (pry_slot) translate([out_l - wall - 1, out_w / 2 - pry_w / 2, floor_t + in_h - pry_d]) cube([wall + 2, pry_w, pry_d + 1]);
     // divots that the lid skirts' wedges click into
     at_inner() for (x = skirt_snap_x, side = [0, 1]) detent_seat(x, side);
     // strap slot through both long walls, at floor level
