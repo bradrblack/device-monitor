@@ -7,7 +7,7 @@ screws, and both clamp the accelerometer firmly so it feels the machine's vibrat
 |---|---|---|
 | Source | `slide_in_case.scad` | `device_monitor_case.scad` |
 | Print | `slide_tray.stl`, `slide_lid.stl` | `tray.stl`, `lid.stl` |
-| Outside | 57.8 x 27.6 x 15 mm | 55.8 x 31 x 17 mm |
+| Outside | 57.8 x 27.6 x 15 mm | 55.8 x 31 x 19 mm |
 | Electronics | SuperMini + GY-346, 4 wires soldered direct | SuperMini + GY-346 on the [carrier PCB](../PCB.md), without the optional capacitor C1 |
 | Parts held by | wall grooves, lid posts, floor rails and pins | printed pins through the PCB's holes, lid posts |
 | RESET | flex tab in the lid | the same flex tab |
@@ -16,7 +16,11 @@ screws, and both clamp the accelerometer firmly so it feels the machine's vibrat
 | Vents | 2.6 mm holes: a grid in the lid, a row of 5 in each long wall | the same |
 | Status LED | through the reset tab's outline (thin lid) and the vents | the same |
 | Zip-tie slot | 4.8 mm | 5.5 mm |
-| Magnet mount | optional: 4 x 10 x 3 mm magnets in the floor, 1.8 mm taller ([below](#magnet-mount)) | no |
+| Magnet mount | optional: 4 x 10 x 3 mm magnets in the floor, 1.8 mm taller ([below](#magnet-mount)) | the same ([PCB case magnets](#magnet-mount-1)) |
+
+Both trays have a pry slot: an 8 mm wide, 1.2 mm deep notch in the top of the end
+wall opposite the USB-C port. Put a small flat screwdriver in it, under the lid's
+edge, and twist to pop the lid off (`pry_slot = false` to leave it out).
 
 The two cases share the lid design: the snap closure, the reset tab, the vent holes,
 and the antenna recess are the same in both, and both lids have posts to wind the cable round. The slide-in case needs
@@ -196,11 +200,11 @@ openscad --export-format binstl -o slide_tray_magnets.stl -D 'part="tray"' -D ma
 
 A two-part printed case (tray + lid) for the device monitor carrier PCB
 (`../devmon_carrier.kicad_pcb`: ESP32-C3 SuperMini and GY-346 / ADXL346 module).
-Outside it is **55.8 x 31 x 17 mm**. The optional capacitor C1 does not fit this
+Outside it is **55.8 x 31 x 19 mm**. The optional capacitor C1 does not fit this
 low case: it is too tall for the lid.
 
 **With the capacitor:** print `tray_cap.stl` and `lid_cap.stl` instead (or set
-`cap_fitted = true` in the scad). That case is **23 mm tall**. Everything else is the same.
+`cap_fitted = true` in the scad). That case is **25 mm tall**. Everything else is the same.
 
 <img src="case-cap.png" alt="PCB case for a board with C1: closed, board in the tray, lid from inside" width="840"/>
 
@@ -241,7 +245,7 @@ It is built from the author's two earlier cases:
 | H1 (24.4, 12) | standoff + short pin, stopping inside the hole | nothing over the hole (the antenna is above it). A solid 3.4 mm post presses on the board 6 mm to the RESET side, at (24.4, 6), on the bare strip between the ESP and J1 |
 | H2 (45.3, 17.5) | standoff + pin | hollow 7 mm cap over the pin, 0.3 mm above the board. It is also the cable post |
 
-The board sits on 3 mm standoffs, so its solder tails clear the floor. Once closed, the
+The board sits on 5 mm standoffs (`tail_len` + 0.7), so header pins up to 4.3 mm long below it (measured) clear the floor without trimming. Once closed, the
 press post and the H2 cap hold the board down against its standoffs, so the accelerometer is
 coupled to the case.
 
@@ -285,6 +289,19 @@ washer, dryer or AC cabinet. For a pipe, such as a sump pump discharge, thread o
 (up to 5.5 x 2 mm) through the slot at floor level. It crosses the floor under the
 carrier, where the board has no solder tails, and comes out the other side. Set
 `strap = false` for a case without the slot.
+
+### Magnet mount
+
+The same magnet option as the [slide-in case](#magnet-mount): set `magnets = true`
+in `device_monitor_case.scad`, or print `tray_magnets.stl` with the normal
+`lid.stl`. Four 10 x 3 mm magnets press into pockets that open into the cavity,
+with 0.6 mm of floor under each, so no glue is needed. They sit in a 2 x 2 grid
+between the standoff bosses (`mag_kicad`, in board coordinates). The rear pair is
+under the zip-tie slot, which still works. The floor grows from 2 to 3.8 mm, so the
+case is **55.8 x 31 x 20.8 mm** (26.8 mm with `cap_fitted`). Press the magnets in
+before the board goes in.
+
+<img src="case-magnets.png" alt="PCB case tray with magnet pockets, and with the carrier fitted" width="840"/>
 
 ### Changing it
 

@@ -190,6 +190,11 @@ sv_drop = 2.6;               // hole centre below the ceiling
 sv_skirt_extra = 0.6;        // the skirt's holes are this much wider, so the two line up
 
 // Zip-tie slot through both long walls, under the module (optional)
+// Pry slot: a notch in the top of the tray's end wall opposite the USB-C port, so a
+// small flat screwdriver can go under the lid's edge there and lever it off.
+pry_slot = true;
+pry_w = 8;                   // across the case
+pry_d = 1.2;                 // down from the wall's top
 strap = true;               // 4.8 mm zip tie (the slot fits between the front rail and the pin bosses)
 strap_w = 4.8; strap_h = 2;
 strap_slot_w = strap_w + 1; strap_slot_h = strap_h + 0.6;
@@ -328,6 +333,7 @@ module tray() {
       }
     }
     usb_port_cutter();
+    if (pry_slot) translate([out_l - wall - 1, out_w / 2 - pry_w / 2, floor_t + in_h - pry_d]) cube([wall + 2, pry_w, pry_d + 1]);
     at_inner() for (x = snap_x, side = [0, 1]) detent_seat(x, side);
     if (side_vents) at_inner() for (x = sv_x) translate([x, -wall - 1, sv_z])
       rotate([-90, 0, 0]) cylinder(d = vent_hole_d, h = out_w + 2, $fn = 24);
