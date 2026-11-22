@@ -197,6 +197,8 @@ vents_over_antenna = true;   // drill the grid over the antenna too (Brad: looks
 led_row = false;             // row of 2 mm holes over the SuperMini's LED edge (off: Brad, 2026-11-15)
 led_hole_d = 2.0; led_pitch = 3;
 vent_margin = 0.8;           // web left round the tab, posts and feet
+vent_shift = 0.7;            // grid moved this far from the RESET side: centred, the middle row
+                             // over the SuperMini came within 0.6 mm of the tab's cut and was dropped
 
 // ======================= DERIVED =======================
 esp_x0 = front_gap; esp_x1 = esp_x0 + esp_l;
@@ -466,7 +468,8 @@ module vents() at_inner() {
     if (led_row) [esp_x0, led_y - led_hole_d / 2, esp_x1, led_y + led_hole_d / 2],
     if (antenna && !vents_over_antenna) [ant_x0 - 0.3, ant_y0 - 0.1, ant_x0 + ant_l + 0.3, ant_y1 + 0.1]];
   rows = floor((sk_in1 - sk_in0 - 2 * m) / vent_row) + 1;
-  y0 = (in_w - (rows - 1) * vent_row) / 2;
+  y0 = (in_w - (rows - 1) * vent_row) / 2 + vent_shift;
+  assert(y0 >= sk_in0 + m - 0.01 && y0 + (rows - 1) * vent_row <= sk_in1 - m + 0.01, "vent_shift pushes a row into the skirts");
   // two blocks: over the SuperMini, and over the module between the posts and the
   // feet. A block's row is drilled only if every hole in it is clear, so the
   // pattern stays a tidy grid instead of a scatter around the keep-outs.
