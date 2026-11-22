@@ -50,7 +50,7 @@ crush = 0.2;                 // lid feet press this far into the module (0 for t
 
 // ======================= PARTS (measure yours) =======================
 // ESP32-C3 SuperMini: 22.5 x 18 x 1.0 mm bare PCB (Brad, measured 2026-11-14).
-esp_l = 22.5; esp_w = 18; esp_t = 1.0;
+esp_l = 22.7; esp_w = 17.7; esp_t = 1.0;
 esp_tails = 1.0;             // solder under the board
 usb_w = 9; usb_h = 3.2;      // USB-C receptacle on top, at the front edge
 usb_overhang = 0.8;          // how far it sticks out past the board's front edge
@@ -59,7 +59,7 @@ usb_margin = 0.4;
 usb_port_w = usb_w + 1;
 // RESET (not BOOT: the firmware's double-press reopens the Wi-Fi portal). On the
 // SuperMini it is 9 mm from the USB end and 5 mm from one long edge (measured on sm2k).
-btn_from_front = 9; btn_from_edge = 5;
+btn_from_front = 8.8; btn_from_edge = 5.9;   // centre, Brad's micrometer 2026-11-22 (was 9 / 5 from the sm2k board)
 btn_top = 2;                 // button top above the board
 esp_parts_h = 1.6;           // chip and LDO above the board
 // Pads used (from the USB end): 1st-3rd on each edge, 2.36 + 2.54 n from the front,
@@ -121,6 +121,8 @@ in_h = 11;                   // cavity height: USB-C top is ~7.4, plus room to b
 
 // SuperMini support
 esp_z = 3.2;                 // board underside above the floor (clears rails and tails)
+esp_shift = 1.05;            // board moved this far off centre toward the RESET side, so RESET (5.9 in
+                             // from the edge on Brad's board) stays where the antenna strip leaves room
 ledge_in = 0.8;              // ledges reach this far under the board's long edges (pad tails start 0.88 in)
 guide_gap = 0.3;             // board edge to the side guides
 lip_in = 0.6;                // lip reach over the board (rear part only, clear of the used pads)
@@ -202,7 +204,7 @@ vent_shift = 0.7;            // grid moved this far from the RESET side: centred
 
 // ======================= DERIVED =======================
 esp_x0 = front_gap; esp_x1 = esp_x0 + esp_l;
-esp_y0 = (in_w - esp_w) / 2; esp_y1 = esp_y0 + esp_w;
+esp_y0 = (in_w - esp_w) / 2 - esp_shift; esp_y1 = esp_y0 + esp_w;
 esp_top = esp_z + esp_t;
 guide_top = esp_top + lip_gap + lip_t;
 post_x0 = esp_x1 + post_gap; post_x1 = post_x0 + post_d;
