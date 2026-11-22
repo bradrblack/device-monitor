@@ -118,7 +118,7 @@ wire each (26-30 AWG).
 
 The sizes come from measured parts (2026-11-14, SuperMini and RESET re-measured 2026-11-22): SuperMini 22.7 x 17.7 x 1.0 mm bare
 PCB, GY-346 holes 3.0 mm across, 15 mm apart, centres 2.5 mm from the edge opposite
-the pins. The RESET position (`btn_from_front`, `btn_from_edge`) is the Sump Master 2000
+the pins. The RESET position (`btn_from_front`, `btn_from_edge`: 8.8 and 5.9 mm to its centre) is Brad's
 measurement. Clones vary, so if yours differ, change the values at the top of
 `slide_in_case.scad` and run `./check_case.sh slide_in_case.scad` (all three checks
 must say ok) before re-exporting.
