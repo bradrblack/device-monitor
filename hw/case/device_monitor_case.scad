@@ -40,6 +40,7 @@
 // Render (from this folder):
 //   openscad -o tray.stl -D 'part="tray"' device_monitor_case.scad
 //   openscad -o lid.stl  -D 'part="lid"'  device_monitor_case.scad   (exported flipped, ceiling on the bed)
+//   openscad -o tray_magnets.stl -D 'part="tray"' -D magnets=true device_monitor_case.scad   (magnet mount)
 //   part="both" (default) is an assembled preview with stand-in parts, "closed" the
 //   two printed parts only, "fit" the tray with the carrier and its parts, "section"
 //   cuts it open along the board's centre line. The three "clash_*" parts must have
@@ -124,9 +125,25 @@ tab_chamfer = 0.5;           // the cut widens to tab_slot + 2 x this at the lid
 plunger_d = cap_fitted ? 3.2 : 2.4;   // stouter in the tall case, where it is 9 mm long
 btn_gap = 0.5;               // plunger tip above the button at rest
 
+// Magnet mount (optional, as slide_in_case.scad): four 10 x 3 mm neodymium disc
+// magnets in pockets that open into the cavity, with 0.6 mm of floor under each.
+// The skin sits between magnet and steel, so pulling the case off can't pull a
+// magnet out: no glue. The floor grows from 2 to 3.8 mm (the case gets 1.8 mm
+// taller); footprint and lid are unchanged. Press them in before the board goes in.
+magnets = false;
+mag_d = 10; mag_t = 3;
+mag_hole_d = mag_d + 0.15;   // press fit; mag_d + 0.3 to glue them loose
+mag_depth = mag_t + 0.2;     // magnet ends 0.2 below the floor's top
+mag_skin = 0.6;
+mag_chamfer = 0.4;           // lead-in round the pocket mouth
+// Pocket centres in KiCad board coordinates: a 2 x 2 grid in the clear floor
+// between the standoff bosses (H5/H6 at the USB end, H1 in the middle, H2 at the far
+// end). The rear pair sits under the zip-tie slot, which only cuts the walls.
+mag_kicad = [[12.0, 5.25], [12.0, 18.75], [36.7, 5.25], [36.7, 18.75]];
+
 // ======================= SHELL =======================
 wall     = 2;
-floor_t  = 2;
+floor_t  = !magnets ? 2 : mag_skin + mag_depth;
 lid_t    = 2;
 corner_r = 2;
 fit      = 0.2;              // general FDM clearance
@@ -223,6 +240,13 @@ assert(ant_x0 + ant_l + 0.5 <= cleat_xy[0][0] - cleat_d / 2 - cleat_flare, "ante
 assert(sv_x[0] - vent_hole_d / 2 > skirt_snap_x[0] + pad_w / 2 && sv_x[sv_n - 1] + vent_hole_d / 2 < skirt_snap_x[1] - pad_w / 2, "side vents reach a snap pocket");
 
 assert(usb_z1 < in_h - 1, "USB port reaches the ceiling");
+mag_xy = magnets ? [for (m = mag_kicad) bxy(m)] : [];
+for (m = mag_xy) {
+  r = mag_hole_d / 2 + mag_chamfer;
+  for (h = holes) assert(norm(m - bxy(h)) >= boss_d / 2 + r + 0.4, "a magnet pocket cuts a standoff boss");
+  assert(m[0] - r >= 0 && m[0] + r <= in_l && m[1] - r >= 0.5 && m[1] + r <= in_w - 0.5, "a magnet pocket runs into a wall");
+  for (n = mag_xy) if (n != m) assert(norm(m - n) >= mag_hole_d + 0.7, "magnet pockets overlap");
+}
 assert(skirt_gap + skirt_t < side_gap + 1.8, "skirts reach over the board's components");
 
 module rbox(l, w, h, r) {
@@ -252,6 +276,11 @@ module tray() {
       cube([strap_slot_w, out_w + 2, strap_slot_h]);
     if (side_vents) at_inner() for (x = sv_x) translate([x, -wall - 1, sv_z])
       rotate([-90, 0, 0]) cylinder(d = vent_hole_d, h = out_w + 2, $fn = 24);
+    // magnet pockets, each with a 45 deg lead-in
+    at_inner() for (m = mag_xy) translate([m[0], m[1], 0]) {
+      translate([0, 0, -mag_depth]) cylinder(d = mag_hole_d, h = mag_depth + 0.01, $fn = 64);
+      translate([0, 0, -mag_chamfer]) cylinder(d1 = mag_hole_d, d2 = mag_hole_d + 2 * mag_chamfer + 0.02, h = mag_chamfer + 0.01, $fn = 64);
+    }
     // label on the y = 0 long wall, above the divots
     if (label != "") translate([out_l / 2 + 2, 0.5, floor_t + (in_h + bump_zc + 2) / 2])
       rotate([90, 0, 0]) linear_extrude(1)
@@ -457,7 +486,8 @@ module cable_dummy() if (antenna) color("black") at_inner() translate([0, 0, in_
   hull() for (c = cleat_xy) translate(c) circle(d = cleat_d + 2.6);
   hull() for (c = cleat_xy) translate(c) circle(d = cleat_d + 0.2);
 }
-module everything_else() { board_dummy(); parts_dummies(); tails_dummies(); tie_dummy(); antenna_dummy(); cable_dummy(); }
+module magnet_dummy() color("silver") at_inner() for (m = mag_xy) translate([m[0], m[1], -mag_depth]) cylinder(d = mag_d, h = mag_t, $fn = 64);
+module everything_else() { board_dummy(); parts_dummies(); tails_dummies(); tie_dummy(); antenna_dummy(); cable_dummy(); magnet_dummy(); }
 
 echo(str("case outside ", out_l, " x ", out_w, " x ", floor_t + in_h + lid_t, " mm; cavity ", in_l, " x ", in_w, " x ", in_h));
 
@@ -469,7 +499,8 @@ else if (part == "clash_lid_tray") intersection() { tray(); lid(); }
 else if (part == "clash_lid_parts") intersection() { lid(); everything_else(); }
 else if (part == "clash_tray_parts") intersection() { tray(); everything_else(); }
 else if (part == "closed") { color("steelblue") tray(); color("lightgray") lid(); }
-else if (part == "fit") { tray(); board_dummy(); parts_dummies(); }
+else if (part == "fit") { tray(); board_dummy(); parts_dummies(); magnet_dummy(); }
+else if (part == "magnets") { color("steelblue", 0.45) tray(); magnet_dummy(); }   // see-through tray with its magnets
 else if (part == "section") intersection() {
   union() { tray(); lid(); board_dummy(); parts_dummies(); }
   translate([-5, wall + bxy(esp_xy)[1], -10]) cube([200, 50, 60]);

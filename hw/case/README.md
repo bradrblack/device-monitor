@@ -16,7 +16,7 @@ screws, and both clamp the accelerometer firmly so it feels the machine's vibrat
 | Vents | 2.6 mm holes: a grid in the lid, a row of 5 in each long wall | the same |
 | Status LED | through the reset tab's outline (thin lid) and the vents | the same |
 | Zip-tie slot | 4.8 mm | 5.5 mm |
-| Magnet mount | optional: 4 x 10 x 3 mm magnets in the floor, 1.8 mm taller ([below](#magnet-mount)) | no |
+| Magnet mount | optional: 4 x 10 x 3 mm magnets in the floor, 1.8 mm taller ([below](#magnet-mount)) | the same ([PCB case magnets](#magnet-mount-1)) |
 
 The two cases share the lid design: the snap closure, the reset tab, the vent holes,
 and the antenna recess are the same in both, and both lids have posts to wind the cable round. The slide-in case needs
@@ -285,6 +285,19 @@ washer, dryer or AC cabinet. For a pipe, such as a sump pump discharge, thread o
 (up to 5.5 x 2 mm) through the slot at floor level. It crosses the floor under the
 carrier, where the board has no solder tails, and comes out the other side. Set
 `strap = false` for a case without the slot.
+
+### Magnet mount
+
+The same magnet option as the [slide-in case](#magnet-mount): set `magnets = true`
+in `device_monitor_case.scad`, or print `tray_magnets.stl` with the normal
+`lid.stl`. Four 10 x 3 mm magnets press into pockets that open into the cavity,
+with 0.6 mm of floor under each, so no glue is needed. They sit in a 2 x 2 grid
+between the standoff bosses (`mag_kicad`, in board coordinates). The rear pair is
+under the zip-tie slot, which still works. The floor grows from 2 to 3.8 mm, so the
+case is **55.8 x 31 x 18.8 mm** (24.8 mm with `cap_fitted`). Press the magnets in
+before the board goes in.
+
+<img src="case-magnets.png" alt="PCB case tray with magnet pockets, and with the carrier fitted" width="840"/>
 
 ### Changing it
 
