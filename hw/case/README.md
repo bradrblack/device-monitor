@@ -7,7 +7,7 @@ screws, and both clamp the accelerometer firmly so it feels the machine's vibrat
 |---|---|---|
 | Source | `slide_in_case.scad` | `device_monitor_case.scad` |
 | Print | `slide_tray.stl`, `slide_lid.stl` | `tray.stl`, `lid.stl` |
-| Outside | 55.8 x 27.6 x 15 mm | 55.8 x 31 x 17 mm |
+| Outside | 57.8 x 27.6 x 15 mm | 55.8 x 31 x 17 mm |
 | Electronics | SuperMini + GY-346, 4 wires soldered direct | SuperMini + GY-346 on the [carrier PCB](../PCB.md), without the optional capacitor C1 |
 | Parts held by | wall grooves, lid posts, floor rails and pins | printed pins through the PCB's holes, lid posts |
 | RESET | flex tab in the lid | the same flex tab |
@@ -39,7 +39,7 @@ lay the open lid beside the tray, with no loose loop to trap when you close it.
 
 ## Slide-in case
 
-`slide_in_case.scad` builds a monitor without the carrier board: **55.8 x 27.6 x
+`slide_in_case.scad` builds a monitor without the carrier board: **57.8 x 27.6 x
 15 mm** outside. The ESP32-C3 SuperMini and the GY-346 are joined by four wires
 soldered straight to the pads, with no headers.
 
@@ -64,7 +64,13 @@ wire each (26-30 AWG).
   The lip stays clear of the front 9.5 mm, where the wires are soldered.
 - Two posts on the lid drop in behind the SuperMini's rear corners. Pushing a cable
   in pushes the board back into them, and pulling a cable out pulls it forward
-  against the end wall. The wires run back between the posts.
+  against the end wall. The wires run back between the posts. The posts are 5 mm
+  deep, and each one's tip drops in front of a low stop on the tray floor (1.3 mm
+  high, joined to the GY-346's front rail, under the module's edge), so the push of
+  a cable goes into the tray. The first print had 3 mm posts hanging free, and both
+  snapped off at the lid.
+
+<img src="post-brace.png" alt="Side cut through a post: now, tray stops, stops plus 5 mm posts" width="420"/>
 - The GY-346 sits on two floor rails with its header pads toward the SuperMini. Two
   pins come up through its mounting holes, and two small lid feet press the board
   down around the holes. A firm clamp matters here, because a loose module reads its
@@ -128,7 +134,7 @@ For freezers, dryers, AC units and anything else with a steel panel, the tray ca
 hold four 10 mm x 3 mm neodymium disc magnets in its floor. Print
 `slide_tray_magnets.stl` (or set `magnets = true` at the top of
 `slide_in_case.scad`) with the normal `slide_lid.stl`. The floor grows from 2 to
-3.8 mm, so the case is **55.8 x 27.6 x 16.8 mm**: 1.8 mm taller, same footprint.
+3.8 mm, so the case is **57.8 x 27.6 x 16.8 mm**: 1.8 mm taller, same footprint.
 
 The pockets open into the cavity: two on the centre line under the SuperMini, two
 across the far end behind the GY-346, each with 0.6 mm of floor under it.

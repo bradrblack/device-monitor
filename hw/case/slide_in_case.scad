@@ -129,9 +129,15 @@ lip_gap = 0.3;               // lip above the board's top
 front_gap = 0.2;             // board's front edge to the end wall
 
 // Lid posts behind the SuperMini's rear corners
-post_d = 3;                  // depth along x
+post_d = 5;                  // depth along x (3 on the first print: both snapped off at the lid)
 post_over = 1.2;             // how far each covers the board's rear edge
 post_gap = 0.3;              // board's rear edge to the posts
+// Post stops: a low block on the tray floor behind each post's tip, joined to the
+// GY-346's front rail. Plugging a cable in pushes the board into the posts; the
+// stops catch the posts' tips, so the push goes into the tray instead of bending
+// the posts off the lid (Brad's first print: both snapped at the lid).
+post_stop_gap = 0.1;         // post's rear face to its stop
+post_stop_h = 1.3;           // under the GY-346's pin-row solder tails (they hang to rail_h - gy_tails)
 
 // GY-346 support
 rail_h = 2.6;                // module underside above the floor (zip-tie slot runs under it)
@@ -245,6 +251,8 @@ assert(esp_y0 + post_over < ant_y0, "post A would cover the antenna");
 assert(usb_z1 < in_h - 1, "USB opening reaches the ceiling");
 assert(guide_top + 0.5 <= skirt_z0, "skirts reach down onto the side guides");
 assert(rail_h >= strap_slot_h, "zip tie doesn't fit under the module");
+assert(post_stop_h >= 0.3 + 0.8, "post stops too low to catch the posts' tips");
+assert(post_stop_h <= rail_h - gy_tails - 0.2, "post stops reach the GY-346's solder tails");
 if (magnets) {
   r = mag_hole_d / 2 + mag_chamfer;
   assert(mag_xy[0][0] - r >= 0, "front magnet pocket runs under the end wall");
@@ -289,6 +297,9 @@ module tray() {
           box([0, min(wy, e + s * guide_gap), 0], [esp_x1, max(wy, e + s * guide_gap), guide_top]);
           box([lip_x0, min(wy, e - s * lip_in), esp_top + lip_gap], [lip_x1, max(wy, e - s * lip_in), guide_top]);
         }
+        // stops behind the lid posts' tips, running back into the front rail
+        for (y = [[0, esp_y0 + post_over], [esp_y1 - post_over, in_w]])
+          box([post_x1 + post_stop_gap, y[0], 0], [gy_x0 + 2.0 + 0.01, y[1], post_stop_h]);
         // GY-346: front rail just behind its pin row's tails, rear rail at its rear edge
         for (rx = [gy_x0 + 2.0, gy_holes[0][0] - rail_w / 2])
           box([rx, 0, 0], [rx + rail_w, in_w, rail_h]);
@@ -539,6 +550,10 @@ reset_side_up() {
   else if (part == "feet") {   // the module from above, with the bottom 2 mm of the lid's feet over it
     gy_dummy();
     color("orangered", 0.8) intersection() { lid(); at_inner() box([gy_x0 + 0.5, -1, gy_top - 1], [in_l + 1, in_w + 1, gy_top + 2]); }
+  }
+  else if (part == "post_section") intersection() {   // cut through the post on the RESET side, by the wall
+    union() { tray(); lid(); everything_else(); }
+    translate([-5, wall + 2.6, -10]) cube([200, 50, 60]);
   }
   else if (part == "section") intersection() {
     union() { tray(); lid(); everything_else(); }
