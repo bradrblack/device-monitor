@@ -7,7 +7,7 @@ screws, and both clamp the accelerometer firmly so it feels the machine's vibrat
 |---|---|---|
 | Source | `slide_in_case.scad` | `device_monitor_case.scad` |
 | Print | `slide_tray.stl`, `slide_lid.stl` | `tray.stl`, `lid.stl` |
-| Outside | 55.8 x 27.6 x 15 mm | 55.8 x 31 x 17 mm |
+| Outside | 57.8 x 27.6 x 15 mm | 55.8 x 31 x 17 mm |
 | Electronics | SuperMini + GY-346, 4 wires soldered direct | SuperMini + GY-346 on the [carrier PCB](../PCB.md), without the optional capacitor C1 |
 | Parts held by | wall grooves, lid posts, floor rails and pins | printed pins through the PCB's holes, lid posts |
 | RESET | flex tab in the lid | the same flex tab |
@@ -16,6 +16,7 @@ screws, and both clamp the accelerometer firmly so it feels the machine's vibrat
 | Vents | 2.6 mm holes: a grid in the lid, a row of 5 in each long wall | the same |
 | Status LED | through the reset tab's outline (thin lid) and the vents | the same |
 | Zip-tie slot | 4.8 mm | 5.5 mm |
+| Magnet mount | optional: 4 x 10 x 3 mm magnets in the floor, 1.8 mm taller ([below](#magnet-mount)) | no |
 
 The two cases share the lid design: the snap closure, the reset tab, the vent holes,
 and the antenna recess are the same in both, and both lids have posts to wind the cable round. The slide-in case needs
@@ -38,7 +39,7 @@ lay the open lid beside the tray, with no loose loop to trap when you close it.
 
 ## Slide-in case
 
-`slide_in_case.scad` builds a monitor without the carrier board: **55.8 x 27.6 x
+`slide_in_case.scad` builds a monitor without the carrier board: **57.8 x 27.6 x
 15 mm** outside. The ESP32-C3 SuperMini and the GY-346 are joined by four wires
 soldered straight to the pads, with no headers.
 
@@ -63,7 +64,13 @@ wire each (26-30 AWG).
   The lip stays clear of the front 9.5 mm, where the wires are soldered.
 - Two posts on the lid drop in behind the SuperMini's rear corners. Pushing a cable
   in pushes the board back into them, and pulling a cable out pulls it forward
-  against the end wall. The wires run back between the posts.
+  against the end wall. The wires run back between the posts. The posts are 5 mm
+  deep, and each one's tip drops in front of a low stop on the tray floor (1.3 mm
+  high, joined to the GY-346's front rail, under the module's edge), so the push of
+  a cable goes into the tray. The first print had 3 mm posts hanging free, and both
+  snapped off at the lid.
+
+<img src="post-brace.png" alt="Side cut through a post: now, tray stops, stops plus 5 mm posts" width="420"/>
 - The GY-346 sits on two floor rails with its header pads toward the SuperMini. Two
   pins come up through its mounting holes, and two small lid feet press the board
   down around the holes. A firm clamp matters here, because a loose module reads its
@@ -109,9 +116,9 @@ wire each (26-30 AWG).
 
 ### Measurements
 
-The sizes come from measured parts (2026-11-14): SuperMini 22.5 x 18 x 1.0 mm bare
+The sizes come from measured parts (2026-11-14, SuperMini and RESET re-measured 2026-11-22): SuperMini 22.7 x 17.7 x 1.0 mm bare
 PCB, GY-346 holes 3.0 mm across, 15 mm apart, centres 2.5 mm from the edge opposite
-the pins. The RESET position (`btn_from_front`, `btn_from_edge`) is the Sump Master 2000
+the pins. The RESET position (`btn_from_front`, `btn_from_edge`: 8.8 and 5.9 mm to its centre) is Brad's
 measurement. Clones vary, so if yours differ, change the values at the top of
 `slide_in_case.scad` and run `./check_case.sh slide_in_case.scad` (all three checks
 must say ok) before re-exporting.
@@ -120,6 +127,54 @@ must say ok) before re-exporting.
 
 Same as the PCB case: VHB tape on a flat panel, or a zip tie (up to 4.8 x 2 mm)
 through the slot under the module for a pipe. See [Mounting](#mounting) below.
+
+### Magnet mount
+
+For freezers, dryers, AC units and anything else with a steel panel, the tray can
+hold four 10 mm x 3 mm neodymium disc magnets in its floor. Print
+`slide_tray_magnets.stl` (or set `magnets = true` at the top of
+`slide_in_case.scad`) with the normal `slide_lid.stl`. The floor grows from 2 to
+3.8 mm, so the case is **57.8 x 27.6 x 16.8 mm**: 1.8 mm taller, same footprint.
+
+The pockets open into the cavity: two on the centre line under the SuperMini, two
+across the far end behind the GY-346, each with 0.6 mm of floor under it.
+
+<img src="slide-magnets-pockets.png" alt="Magnet pockets in the printed tray" width="420"/> <img src="slide-magnets-section.png" alt="Section on the centre line: the two magnets under the SuperMini, 0.6 mm of floor below them" width="420"/>
+<img src="slide-magnets.png" alt="Magnets in the tray, alone and with the parts fitted" width="840"/>
+
+**No glue needed.** The 0.6 mm floor skin sits between each magnet and the steel,
+so pulling the case off the steel lifts the skin, which lifts the magnet with it.
+Nothing can pull a magnet out. (Pockets in the underside would be the other way
+round: the magnet stays on the steel as the case comes away, so only glue would hold
+it, and a label over it won't.) The skin costs some grip, very roughly half of a
+bare magnet's pull, but four 10 x 3 mm magnets still hold far more than the
+monitor weighs, also on a vertical panel.
+
+**Fitting.** Pockets are 10.15 mm across (`mag_hole_d`) and 3.2 mm deep, with a
+small lead-in round the mouth: a firm press fit for a 10.0 mm magnet on most
+printers. Press each one in with a flat non-magnetic tool (a pencil end) before the
+electronics go in; keep the other magnets well away, or they jump. Any pole up
+works. If a magnet is loose, a drop of CA glue fixes it; if they won't go in, set
+`mag_hole_d = 10.3`. The magnets end 0.2 mm below the floor's top, so nothing stands
+proud under the parts. The bottom of the case stays solid and flat for the QR label,
+and the zip-tie slot still works.
+
+**Printing.** As the plain tray, floor down, no supports.
+
+**Wi-Fi near steel.** A steel panel under the case reflects and detunes the
+antenna. The ribbon antenna is on the lid ceiling, the part of the case furthest
+from the steel (about 15 mm), which is about as good as a case this size gets.
+Mount it on the outside of the cabinet, lid facing out, and not behind a steel door
+or inside a metal housing. If the signal reading on the web page drops a lot after
+mounting, try a spot near the cabinet's edge or a side panel facing the router.
+
+### Status LED
+
+The SuperMini's RGB LED sits 13.9 mm from the USB end and 3.7 mm from the RESET
+edge, right under the edge of the reset tab's slot. Print the lid in translucent
+(natural) PLA and it glows through the slot and the lid. Over the LED the lid is
+thinned from inside to 0.6 mm (`led_window`, stopping short of the slot so the
+tab's tongue keeps its thickness), so the LED shows as a brighter spot.
 
 ### Printing
 
@@ -131,6 +186,8 @@ LED glow through the thin lid and the tab's outline. To re-export after a change
 ./check_case.sh slide_in_case.scad      # each line must say ok
 openscad --export-format binstl -o slide_tray.stl -D 'part="tray"' slide_in_case.scad
 openscad --export-format binstl -o slide_lid.stl  -D 'part="lid"'  slide_in_case.scad
+# magnet tray: also run CASE_DEFS="-D magnets=true" ./check_case.sh slide_in_case.scad
+openscad --export-format binstl -o slide_tray_magnets.stl -D 'part="tray"' -D magnets=true slide_in_case.scad
 ```
 
 ## PCB case

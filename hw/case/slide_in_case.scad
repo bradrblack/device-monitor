@@ -35,9 +35,10 @@
 // Render (from this folder):
 //   openscad -o slide_tray.stl -D 'part="tray"' slide_in_case.scad
 //   openscad -o slide_lid.stl  -D 'part="lid"'  slide_in_case.scad    (flipped, ceiling on the bed)
+//   openscad -o slide_tray_magnets.stl -D 'part="tray"' -D magnets=true slide_in_case.scad   (magnet mount)
 //   part="both" (default) is a preview with stand-in parts, "fit" the tray with the
 //   parts, "section" a cut through the SuperMini's centre line, "feet" the lid's
-//   feet over the GY-346 and its parts. The "clash_*" parts
+//   feet over the GY-346 and its parts, "magnets" a see-through tray with its magnets. The "clash_*" parts
 //   must have zero volume: run ./check_case.sh slide_in_case.scad after any change.
 //
 // Coordinates: x along the case from the USB end, y across, z up from the tray
@@ -49,7 +50,7 @@ crush = 0.2;                 // lid feet press this far into the module (0 for t
 
 // ======================= PARTS (measure yours) =======================
 // ESP32-C3 SuperMini: 22.5 x 18 x 1.0 mm bare PCB (Brad, measured 2026-11-14).
-esp_l = 22.5; esp_w = 18; esp_t = 1.0;
+esp_l = 22.7; esp_w = 17.7; esp_t = 1.0;
 esp_tails = 1.0;             // solder under the board
 usb_w = 9; usb_h = 3.2;      // USB-C receptacle on top, at the front edge
 usb_overhang = 0.8;          // how far it sticks out past the board's front edge
@@ -58,7 +59,10 @@ usb_margin = 0.4;
 usb_port_w = usb_w + 1;
 // RESET (not BOOT: the firmware's double-press reopens the Wi-Fi portal). On the
 // SuperMini it is 9 mm from the USB end and 5 mm from one long edge (measured on sm2k).
-btn_from_front = 9; btn_from_edge = 5;
+btn_from_front = 8.8; btn_from_edge = 5.9;   // centre, Brad's micrometer 2026-11-22 (was 9 / 5 from the sm2k board)
+// RGB status LED (Brad, 2026-11-22): centre 13.9 mm from the USB end, 3.7 mm from the
+// same long edge as RESET, so it sits under the edge of the reset tab's slot.
+led_from_front = 13.9; led_from_edge = 3.7;
 btn_top = 2;                 // button top above the board
 esp_parts_h = 1.6;           // chip and LDO above the board
 // Pads used (from the USB end): 1st-3rd on each edge, 2.36 + 2.54 n from the front,
@@ -98,14 +102,30 @@ cleat_flare = 0.8;           // flared foot, so the turns can't slip off
 cleat_pitch = 10;            // between the two posts, across the case
 cleat_z0 = 4;                // posts' lower end above the floor
 
+// Magnet mount (optional): four 10 x 3 mm neodymium disc magnets in the tray floor,
+// to stick the monitor to a freezer, dryer or AC unit. The pockets open into the
+// cavity, with 0.6 mm of floor left under each magnet: that skin sits between the
+// magnet and the steel, so pulling the case off can't pull a magnet out and no glue
+// is needed. Two sit under the SuperMini, two behind the GY-346; fit them before the
+// electronics. The floor grows from 2 to 3.8 mm (the case gets 1.8 mm taller); the
+// footprint and the lid don't change.
+magnets = false;
+mag_d = 10; mag_t = 3;       // the magnet
+mag_hole_d = mag_d + 0.15;   // press fit on a typical 0.4 mm nozzle; mag_d + 0.3 if you'd rather glue them loose
+mag_depth = mag_t + 0.2;     // magnet ends 0.2 below the surface: never proud, room for a drop of glue
+mag_skin = 0.6;              // floor left over each pocket (3 layers at 0.2)
+mag_chamfer = 0.4;           // lead-in round the pocket mouth
+
 // ======================= SHELL =======================
-wall = 2; floor_t = 2; lid_t = 2; corner_r = 2;
+wall = 2; floor_t = !magnets ? 2 : mag_skin + mag_depth; lid_t = 2; corner_r = 2;
 fit = 0.2;                   // general FDM clearance
 in_w = 23.6;                 // cavity width: the module's 21 plus room for the antenna strip beside the reset tab
 in_h = 11;                   // cavity height: USB-C top is ~7.4, plus room to bend the wires
 
 // SuperMini support
 esp_z = 3.2;                 // board underside above the floor (clears rails and tails)
+esp_shift = 1.05;            // board moved this far off centre toward the RESET side, so RESET (5.9 in
+                             // from the edge on Brad's board) stays where the antenna strip leaves room
 ledge_in = 0.8;              // ledges reach this far under the board's long edges (pad tails start 0.88 in)
 guide_gap = 0.3;             // board edge to the side guides
 lip_in = 0.6;                // lip reach over the board (rear part only, clear of the used pads)
@@ -114,9 +134,15 @@ lip_gap = 0.3;               // lip above the board's top
 front_gap = 0.2;             // board's front edge to the end wall
 
 // Lid posts behind the SuperMini's rear corners
-post_d = 3;                  // depth along x
+post_d = 5;                  // depth along x (3 on the first print: both snapped off at the lid)
 post_over = 1.2;             // how far each covers the board's rear edge
 post_gap = 0.3;              // board's rear edge to the posts
+// Post stops: a low block on the tray floor behind each post's tip, joined to the
+// GY-346's front rail. Plugging a cable in pushes the board into the posts; the
+// stops catch the posts' tips, so the push goes into the tray instead of bending
+// the posts off the lid (Brad's first print: both snapped at the lid).
+post_stop_gap = 0.1;         // post's rear face to its stop
+post_stop_h = 1.3;           // under the GY-346's pin-row solder tails (they hang to rail_h - gy_tails)
 
 // GY-346 support
 rail_h = 2.6;                // module underside above the floor (zip-tie slot runs under it)
@@ -175,11 +201,19 @@ vent_chamfer = 0.4;          // countersink on the top face, for the same reason
 vents_over_antenna = true;   // drill the grid over the antenna too (Brad: looks, and it shows the antenna)
 led_row = false;             // row of 2 mm holes over the SuperMini's LED edge (off: Brad, 2026-11-15)
 led_hole_d = 2.0; led_pitch = 3;
+// LED window: the lid thinned from inside over the LED, for a translucent lid
+// (it glows through the thin spot and the tab's slot). It stops short of the
+// slot so the flexing tongue keeps its full thickness.
+led_window = true;
+led_win_d = 4;
+led_win_skin = 0.6;          // lid left over it (3 layers)
 vent_margin = 0.8;           // web left round the tab, posts and feet
+vent_shift = 0.7;            // grid moved this far from the RESET side: centred, the middle row
+                             // over the SuperMini came within 0.6 mm of the tab's cut and was dropped
 
 // ======================= DERIVED =======================
 esp_x0 = front_gap; esp_x1 = esp_x0 + esp_l;
-esp_y0 = (in_w - esp_w) / 2; esp_y1 = esp_y0 + esp_w;
+esp_y0 = (in_w - esp_w) / 2 - esp_shift; esp_y1 = esp_y0 + esp_w;
 esp_top = esp_z + esp_t;
 guide_top = esp_top + lip_gap + lip_t;
 post_x0 = esp_x1 + post_gap; post_x1 = post_x0 + post_d;
@@ -198,6 +232,8 @@ lip_x0 = pad_zone; lip_x1 = min(in_l - esp_l - 0.5, esp_x1 - 3.5);
 usb_y = (esp_y0 + esp_y1) / 2;
 usb_z0 = esp_top - usb_margin; usb_z1 = esp_top + usb_h + usb_margin;
 btn_xy = [esp_x0 + btn_from_front, esp_y0 + btn_from_edge];
+led_xy = [esp_x0 + led_from_front, esp_y0 + led_from_edge];
+led_win_y1 = btn_xy[1] - tab_w / 2 - tab_slot - 0.4;   // window's edge toward the slot
 plunger_z0 = esp_top + btn_top + btn_gap;
 sk_in0 = skirt_gap + skirt_t; sk_in1 = in_w - skirt_gap - skirt_t;   // skirts' inner faces
 ant_y0 = btn_xy[1] + tab_pad_d / 2 + tab_slot + 0.3; ant_y1 = ant_y0 + ant_w;
@@ -210,6 +246,17 @@ sv_block = [[snap_x[0] - pad_w / 2, snap_x[0] + pad_w / 2], [snap_x[1] - pad_w /
 sv_x = [for (x = [vent_pitch : vent_pitch : in_l - 3])
         if (len([for (b = sv_block) if (x > b[0] - vent_hole_d / 2 - 0.7 && x < b[1] + vent_hole_d / 2 + 0.7) 1]) == 0) x];
 out_l = in_l + 2 * wall; out_w = in_w + 2 * wall;
+// magnet pocket centres, in cavity coordinates
+mag_web = 0.7;               // plastic left between a pocket and its neighbours
+mag_xy =
+  magnets ? concat(
+    // on the centre line under the SuperMini, between its side ledges, as far apart as it allows
+    [for (x = [mag_hole_d / 2 + mag_chamfer, esp_x1 - mag_hole_d / 2 - mag_chamfer - 0.3]) [x, in_w / 2]],
+    // across the case behind the GY-346's pin bosses, under the cable posts, spread
+    // toward the long walls. The gap there is only 11 mm, so 10 mm pockets run
+    // 0.5 mm under the end wall (solid floor below).
+    [for (s = [-1, 1]) [in_l + 0.5 - mag_hole_d / 2 - mag_chamfer, in_w / 2 + s * (in_w / 2 - mag_hole_d / 2 - mag_chamfer - 0.6)]])
+  : [];
 
 echo(str("slide-in case outside ", out_l, " x ", out_w, " x ", floor_t + in_h + lid_t,
          " mm; cavity ", in_l, " x ", in_w, " x ", in_h));
@@ -219,6 +266,19 @@ assert(esp_y0 + post_over < ant_y0, "post A would cover the antenna");
 assert(usb_z1 < in_h - 1, "USB opening reaches the ceiling");
 assert(guide_top + 0.5 <= skirt_z0, "skirts reach down onto the side guides");
 assert(rail_h >= strap_slot_h, "zip tie doesn't fit under the module");
+assert(post_stop_h >= 0.3 + 0.8, "post stops too low to catch the posts' tips");
+assert(post_stop_h <= rail_h - gy_tails - 0.2, "post stops reach the GY-346's solder tails");
+if (magnets) {
+  r = mag_hole_d / 2 + mag_chamfer;
+  assert(mag_xy[0][0] - r >= 0, "front magnet pocket runs under the end wall");
+  assert(mag_xy[1][0] - mag_xy[0][0] >= mag_hole_d + mag_web, "SuperMini magnet pockets overlap");
+  assert(mag_xy[3][1] - mag_xy[2][1] >= mag_hole_d + mag_web, "rear magnet pockets overlap");
+  assert(mag_xy[1][0] + r <= esp_x1, "rear SuperMini magnet pocket runs past the board");
+  assert(in_w / 2 + r <= esp_y1 - ledge_in - 0.4, "SuperMini magnet pockets cut the side ledges");
+  for (m = [mag_xy[2], mag_xy[3]], h = gy_holes) assert(norm(m - h) >= (gy_hole_d + 2) / 2 + r + 0.3, "rear magnet pockets cut the pin bosses");
+  assert(mag_xy[2][0] - r >= gy_holes[0][0] - rail_w / 2 + rail_w + 0.3, "rear magnet pockets cut the rear rail");
+  assert(mag_xy[2][1] - r >= 0.5 && mag_xy[3][1] + r <= in_w - 0.5, "rear magnet pockets run into the long walls");
+}
 assert(!strap || strap_slot_w <= gy_holes[0][0] - gy_hole_d / 2 - 1 - (gy_x0 + 2.0 + rail_w), "zip-tie slot cuts a rail or a pin boss");
 
 module rbox(l, w, h, r) {
@@ -252,6 +312,9 @@ module tray() {
           box([0, min(wy, e + s * guide_gap), 0], [esp_x1, max(wy, e + s * guide_gap), guide_top]);
           box([lip_x0, min(wy, e - s * lip_in), esp_top + lip_gap], [lip_x1, max(wy, e - s * lip_in), guide_top]);
         }
+        // stops behind the lid posts' tips, running back into the front rail
+        for (y = [[0, esp_y0 + post_over], [esp_y1 - post_over, in_w]])
+          box([post_x1 + post_stop_gap, y[0], 0], [gy_x0 + 2.0 + 0.01, y[1], post_stop_h]);
         // GY-346: front rail just behind its pin row's tails, rear rail at its rear edge
         for (rx = [gy_x0 + 2.0, gy_holes[0][0] - rail_w / 2])
           box([rx, 0, 0], [rx + rail_w, in_w, rail_h]);
@@ -270,7 +333,14 @@ module tray() {
       rotate([-90, 0, 0]) cylinder(d = vent_hole_d, h = out_w + 2, $fn = 24);
     if (strap) at_inner() translate([strap_x - strap_slot_w / 2, -wall - 1, 0])
       cube([strap_slot_w, out_w + 2, strap_slot_h]);
+    magnet_pockets();
   }
+}
+
+// Magnet pockets, each with a 45 deg lead-in at its mouth.
+module magnet_pockets() at_inner() for (m = mag_xy) translate([m[0], m[1], 0]) {
+  translate([0, 0, -mag_depth]) cylinder(d = mag_hole_d, h = mag_depth + 0.01, $fn = 64);
+  translate([0, 0, -mag_chamfer]) cylinder(d1 = mag_hole_d, d2 = mag_hole_d + 2 * mag_chamfer + 0.02, h = mag_chamfer + 0.01, $fn = 64);
 }
 
 // =============== WEDGES (copied from device_monitor_case.scad) ===============
@@ -376,6 +446,11 @@ module lid() {
         translate([root_x - 0.01, btn_xy[1] - tab_w / 2, in_h - 0.01]) cube([0.01, tab_w, 0.01]);
       }
     }
+    // LED window
+    if (led_window) at_inner() intersection() {
+      translate([led_xy[0], led_xy[1], in_h - 0.01]) cylinder(d = led_win_d, h = lid_t - led_win_skin + 0.01, $fn = 32);
+      box([led_xy[0] - led_win_d, sk_in0 + 0.3, in_h - 1], [led_xy[0] + led_win_d, led_win_y1, in_h + lid_t]);
+    }
     // antenna outline: a 0.2 mm recess in the ceiling to stick it into
     if (antenna) at_inner() box([ant_x0 - 0.3, ant_y0 - 0.1, in_h - 0.01], [ant_x0 + ant_l + 0.3, ant_y1 + 0.1, in_h + 0.2]);
     vents();
@@ -409,9 +484,11 @@ module vents() at_inner() {
     [fx0, 0, fx1, gy_holes[0][1] + foot_w / 2], [fx0, gy_holes[1][1] - foot_w / 2, fx1, in_w],
     for (c = cleat_xy) [c[0] - cleat_d / 2, c[1] - cleat_d / 2, c[0] + cleat_d / 2, c[1] + cleat_d / 2],
     if (led_row) [esp_x0, led_y - led_hole_d / 2, esp_x1, led_y + led_hole_d / 2],
+    if (led_window) [led_xy[0] - led_win_d / 2, led_xy[1] - led_win_d / 2, led_xy[0] + led_win_d / 2, led_win_y1],
     if (antenna && !vents_over_antenna) [ant_x0 - 0.3, ant_y0 - 0.1, ant_x0 + ant_l + 0.3, ant_y1 + 0.1]];
   rows = floor((sk_in1 - sk_in0 - 2 * m) / vent_row) + 1;
-  y0 = (in_w - (rows - 1) * vent_row) / 2;
+  y0 = (in_w - (rows - 1) * vent_row) / 2 + vent_shift;
+  assert(y0 >= sk_in0 + m - 0.01 && y0 + (rows - 1) * vent_row <= sk_in1 - m + 0.01, "vent_shift pushes a row into the skirts");
   // two blocks: over the SuperMini, and over the module between the posts and the
   // feet. A block's row is drilled only if every hole in it is clear, so the
   // pattern stays a tidy grid instead of a scatter around the keep-outs.
@@ -469,7 +546,10 @@ module cable_dummy() if (antenna && cable_posts) color("black") at_inner() trans
 }
 module tie_dummy() if (strap) color("black") at_inner()
   translate([strap_x - strap_w / 2, -wall - 0.5, 0.2]) cube([strap_w, out_w + 1, strap_h - 0.4]);
-module everything_else() { esp_dummy(); gy_dummy(); wires_dummy(); antenna_dummy(); cable_dummy(); tie_dummy(); }
+// magnets, pressed to the bottom of their pockets
+module magnet_dummy() color("silver") at_inner() for (m = mag_xy)
+  translate([m[0], m[1], -mag_depth]) cylinder(d = mag_d, h = mag_t, $fn = 64);
+module everything_else() { esp_dummy(); gy_dummy(); wires_dummy(); antenna_dummy(); cable_dummy(); tie_dummy(); magnet_dummy(); }
 
 // Everything above is laid out with the RESET side at low y. Looking down on the
 // SuperMini (USB-C to the left), RESET is on the far side, as on the carrier
@@ -485,12 +565,17 @@ reset_side_up() {
   else if (part == "clash_lid_parts") intersection() { lid(); everything_else(); }
   else if (part == "clash_tray_parts") intersection() { tray(); everything_else(); }
   else if (part == "closed") { color("steelblue") tray(); color("lightgray") lid(); }
-  else if (part == "fit") { tray(); esp_dummy(); gy_dummy(); wires_dummy(); tie_dummy(); }
+  else if (part == "fit") { tray(); esp_dummy(); gy_dummy(); wires_dummy(); tie_dummy(); magnet_dummy(); }
+  else if (part == "magnets") { color("steelblue", 0.45) tray(); magnet_dummy(); }   // see-through tray with its magnets
   else if (part == "lid_inside")   // the lid as printed (inside up), with the antenna and the wound cable
     translate([0, out_w, floor_t + in_h + lid_t]) rotate([180, 0, 0]) { color("lightgray") lid(); antenna_dummy(); cable_dummy(); }
   else if (part == "feet") {   // the module from above, with the bottom 2 mm of the lid's feet over it
     gy_dummy();
     color("orangered", 0.8) intersection() { lid(); at_inner() box([gy_x0 + 0.5, -1, gy_top - 1], [in_l + 1, in_w + 1, gy_top + 2]); }
+  }
+  else if (part == "post_section") intersection() {   // cut through the post on the RESET side, by the wall
+    union() { tray(); lid(); everything_else(); }
+    translate([-5, wall + 2.6, -10]) cube([200, 50, 60]);
   }
   else if (part == "section") intersection() {
     union() { tray(); lid(); everything_else(); }
